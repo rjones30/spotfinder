@@ -44,7 +44,12 @@ crystal imperfection on the high-energy photon beam come about because the elect
 whereas the orientation of the crystal can only be chosen to match the desired kinematics (monochromatic peak energy, polarization) at one point. In this
 tool, the electron beam spot is modeled as a two-dimensional gaussian distribution described by an ellipse that defines the one-sigma contour. Three
 parameters are needed to define the beam spot ellipse, eg. the major and minor axes and the inclination angle of the major axis. This tool uses a different
-but equivalent parameterization: the sigmas of the x and y projections, and the x,y correlation coefficient. 
+but equivalent parameterization: the sigmas of the x and y projections, and the x,y correlation coefficient. Here is a screenshot of the spotfinder tool
+invoked with default parameters, showing the beam spot superimposed on the diamnod crystal topograph on the left, and the resulting distribution of tilt
+angles &theta;<sub>V</sub> vs. &theta;<sub>H</sub> on the right. Slider controls accompanied by form numeric inputs allow the beam spot shape and position
+on the crystal to be varied, while the results in terms of the tilt intensity distribution are updated in real time.
+![image](https://user-images.githubusercontent.com/7832920/174473510-52d7ec20-959a-4d54-aef3-f1d40c54031e.png)
+
 
 ## references ##
 [1] G. Diambrini-Palazzi, "High-Energy Bremsstrahlung and Electron Pair Production in Thin Crystals", Revs. Mod. Phys. vol 40 (1968) p. 611.  
