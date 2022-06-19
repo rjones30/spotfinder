@@ -5,7 +5,7 @@ One commonly used method for producing beams of high-energy photons (gamma rays)
 target. The radiation emitted by the electrons, known as bremsstrahlung, is normally either circularly polarized (if the electrons are longitudinally
 polarized) or unpolarized. A third option, linear polarization, is also available if the target ("radiator") is an oriented crystal. The radiation of a
 photon from a high-energy electron passing through a crystal is known as "coherent bremsstrahlung", which has been extensively studied by theoretically
-and experimentally [^1]-[^5]. At sufficiently high electron energies, a coherent bremsstrahlung beam can be produced with nearly ideal properties: high
+and experimentally [1-5]. At sufficiently high electron energies, a coherent bremsstrahlung beam can be produced with nearly ideal properties: high
 intensity, monochromatic, and higly polarized. Operating a high-energy photon source that achieves all three of these ideal properties presents a number
 of challenges, particularly related to the type and quality of the crystal. The crystal must be as thin as possbile to reduce the effects of multiple
 scattering of the electron beam, but thick enough to produce sufficient photon intensity given the limits of the electron beam current imposed by beam
@@ -19,7 +19,7 @@ radiator mounted for use in the coherent bremsstrahlung beamline in Hall D at Je
 </p>
 
 ## references ##
-[1]: G. Diambrini-Palazzi, "High-Energy Bremsstrahlung and Electron Pair Production in Thin Crystals", Revs. Mod. Phys. vol 40 (1968) p. 611.  
+[1] G. Diambrini-Palazzi, "High-Energy Bremsstrahlung and Electron Pair Production in Thin Crystals", Revs. Mod. Phys. vol 40 (1968) p. 611.  
 [2] U. Timm, "Coherent bremsstrahlung of electrons in crystals", Fortschr. Phys. vol. 17 (1969) p. 765.  
 [3] "Coherent Radiation Sources", edited by A. W. Såenz and H. Uberall, Springer-Verlag, Berlin, 1985.  
 [4] W. Kaune, G. Miller, W. Oliver, R.W. Williams, and K.K. Young, "Inclusive cross sections for pion and proton production by photons using collimated coherent bremsstrahlung", Phys. Rev. vol 11-3 (1975) pp. 478-494.  
