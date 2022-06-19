@@ -37,6 +37,15 @@ produces a rocking-curve topograph for one set of crystal planes. A pair of rock
 &theta;<sub>V</sub> provides complete information about the "tilt" of the crystal planes away from the ideal. One such pair of rocking curves was used
 to generate the elevation map of the crystal shown above.
 
+### the beam spot ###
+The region of the crystal that is impacted by the high-energy electron beam is herein referred to as *the beam spot*. If the beam spot were point-like
+the effects of crystal imperfections would be negligible because a high-quality single-crystal diamond is locally very close to ideal. The effects of
+crystal imperfection on the high-energy photon beam come about because the electron beam radiates simultaneously from an extended region of the crystal,
+whereas the orientation of the crystal can only be chosen to match the desired kinematics (monochromatic peak energy, polarization) at one point. In this
+tool, the electron beam spot is modeled as a two-dimensional gaussian distribution described by an ellipse that defines the one-sigma contour. Three
+parameters are needed to define the beam spot ellipse, eg. the major and minor axes and the inclination angle of the major axis. This tool uses a different
+but equivalent parameterization: the sigmas of the x and y projections, and the x,y correlation coefficient. 
+
 ## references ##
 [1] G. Diambrini-Palazzi, "High-Energy Bremsstrahlung and Electron Pair Production in Thin Crystals", Revs. Mod. Phys. vol 40 (1968) p. 611.  
 [2] U. Timm, "Coherent bremsstrahlung of electrons in crystals", Fortschr. Phys. vol. 17 (1969) p. 765.  
