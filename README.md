@@ -1,5 +1,5 @@
 # spotfinder
-web application for visualization of coherent bremsstrahlung beam properties
+**web application for visualization of coherent bremsstrahlung beam properties**
 
 One commonly used method for producing beams of high-energy photons (gamma rays) is to accelerate electrons to high energy and pass them through a material
 target. The radiation emitted by the electrons, known as bremsstrahlung, is normally either circularly polarized (if the electrons are longitudinally
