@@ -14,7 +14,7 @@ with low atomic number to reduce the background from the incoherent bremsstrahlu
 low-energy background that is neither monochromatic nor polarized, and degrades the properties of the coherernt bremsstrahlung beam. This combination of
 proprties makes **single-crystal diamond** a unique choice for a high-energy coherent bremsstrahlung source. Below is an image of a single-crystal diamond
 radiator mounted for use in the coherent bremsstrahlung beamline in Hall D at Jefferson Lab.
-  ![image](https://user-images.githubusercontent.com/7832920/174456654-bec99763-1a76-43b9-a1be-c0df4eae0b92.png)
+  ![image](https://user-images.githubusercontent.com/7832920/174456654-bec99763-1a76-43b9-a1be-c0df4eae0b92.png){width="50%" align="center"}
 
 
 ## references ##
