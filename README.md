@@ -18,7 +18,7 @@ radiator mounted for use in the coherent bremsstrahlung beamline in Hall D at Je
   <img src="JD70-103_front_view.svg" width="300">
 </p>
 
-## X-ray topograhs ##
+### X-ray topograhs ###
 The above false-color image is an example of what is known as a crystal X-ray topograph. Displayed in the composite graphic is a 7mm x 7mm single-crystal
 diamond that has been polished down to a final thickness of just 50 microns (um) and attached n the lower right corner with conductive epoxy to an aluminum
 mounting tab. In spite of being so thin, the rigidity and thermal conductivity of diamond is sufficient to make such a target self-supporting and self-cooled
