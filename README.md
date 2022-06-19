@@ -48,6 +48,7 @@ but equivalent parameterization: the sigmas of the x and y projections, and the 
 invoked with default parameters, showing the beam spot superimposed on the diamnod crystal topograph on the left, and the resulting distribution of tilt
 angles &theta;<sub>V</sub> vs. &theta;<sub>H</sub> on the right. Slider controls accompanied by form numeric inputs allow the beam spot shape and position
 on the crystal to be varied, while the results in terms of the tilt intensity distribution are updated in real time.
+
 ![image](https://user-images.githubusercontent.com/7832920/174473510-52d7ec20-959a-4d54-aef3-f1d40c54031e.png)
 
 
