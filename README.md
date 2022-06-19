@@ -53,7 +53,8 @@ enhancement, and the beam linear polarization spectrum are updated in real time.
 ![image](https://user-images.githubusercontent.com/7832920/174473510-52d7ec20-959a-4d54-aef3-f1d40c54031e.png)
 ![image](https://user-images.githubusercontent.com/7832920/174476484-a17446f8-7706-4a75-b9e0-b6600ac05a61.png)
 ![image](https://user-images.githubusercontent.com/7832920/174476497-023c0799-5d79-458b-ae62-87684895a8ff.png)
-![image](https://user-images.githubusercontent.com/7832920/174476508-83fb2b36-c24d-49ab-914e-d7fe5ca16ae5.png)
+![image](https://user-images.githubusercontent.com/7832920/174476541-8f9b79ac-c47c-4989-a7d5-c90bf01793d1.png)
+
 
 ## references ##
 [1] G. Diambrini-Palazzi, "High-Energy Bremsstrahlung and Electron Pair Production in Thin Crystals", Revs. Mod. Phys. vol 40 (1968) p. 611.  
