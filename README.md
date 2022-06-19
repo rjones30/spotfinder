@@ -30,7 +30,7 @@ diamond by 12 GeV electrons.
 The above image was produced from the combined analysis of two other images known as "X-ray rocking-curve" topographs.
 Rocking curves are measured by placing a crystal in an monochromatic X-ray beam and rotating (rocking) the crystal through a very small angular range
 around one of the Bragg diffraction peaks of the crystal. As you rotate the crystal around the axes shown in the figure, either &theta;<sub>H</sub> or
-&theta;<sub>V</sub>, different parts of the crystal reach a diffraction maximum at slightly different values of the angles because of local distortions
+&theta;<sub>V</sub>, different parts of the crystal reach a diffraction maximum at slightly different values of the rocking angle because of local distortions
 of the crystal structure. Measuring the angle &theta;<sub>H</sub> or &theta;<sub>V</sub> of the diffraction maximum for every pixel taken with a
 high-resolution X-ray camera and plotting the result as a false-color image produces a rocking-curve topograph for one set of crystal planes. A pair of
 rocking curve topographs, one for &theta;<sub>H</sub> and the other for &theta;<sub>V</sub> provides complete information about the "tilt" of the crystal
