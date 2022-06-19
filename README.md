@@ -19,13 +19,22 @@ radiator mounted for use in the coherent bremsstrahlung beamline in Hall D at Je
 </p>
 
 ## X-ray topograhs ##
-The above false-color image is known as an X-ray "rocking curve" topograph. Displayed in the composite graphic is a 7mm x 7mm single-crystal diamond that
-has been polished down to a final thickness of just 50 microns (um) and attached n the lower right corner with conductive epoxy to an aluminum mounting tab.
-In spite of being so thin, the rigidity and thermal conductivity of diamond is sufficient to make such a target self-supporting and self-cooled when inserted
-into a high-energy electron beam. The color in the image represents an elevation map of one of the planes in the diamond crystal, ranging from low (blue) to
-high (yellow) relative to an ideal plane aligned with the crystal at three of its corners. The total displacement from low to high in this image is only
-600 nm, but this slight imperfection is enough to significantly distort the properties of the coherent bremsstrahlung beam produced by the diamond by
-12 GeV electrons.
+The above false-color image is an example of what is known as a crystal X-ray topograph. Displayed in the composite graphic is a 7mm x 7mm single-crystal
+diamond that has been polished down to a final thickness of just 50 microns (um) and attached n the lower right corner with conductive epoxy to an aluminum
+mounting tab. In spite of being so thin, the rigidity and thermal conductivity of diamond is sufficient to make such a target self-supporting and self-cooled
+when inserted into a high-energy electron beam. The color in the image represents an elevation map of one of the planes in the diamond crystal, ranging from
+low (blue) to high (yellow) relative to an ideal plane aligned with the crystal at three of its corners. The total displacement from low to high in this
+image is only 600 nm, but this slight imperfection is enough to significantly distort the properties of the coherent bremsstrahlung beam produced by the
+diamond by 12 GeV electrons.
+
+The above image was produced from the combined analysis of two other images known as "X-ray rocking-curve" topographs.
+Rocking curves are measured by placing a crystal in an monochromatic X-ray beam and rotating (rocking) the crystal through a very small angular range
+around one of the Bragg diffraction peaks of the crystal. As you rotate the crystal around the axes shown in the figure, either &theta;<sub>H</sub> or
+&theta;<sub>V</sub>, different parts of the crystal reach a diffraction maximum at slightly different values of the angles because of local distortions
+of the crystal structure. Measuring the angle &theta;<sub>H</sub> or &theta;<sub>V</sub> of the diffraction maximum for every pixel taken with a
+high-resolution X-ray camera and plotting the result as a false-color image produces a rocking-curve topograph for one set of crystal planes. A pair of
+rocking curve topographs, one for &theta;<sub>H</sub> and the other for &theta;<sub>V</sub> provides complete information about the "tilt" of the crystal
+planes away from the ideal. One such pair of rocking curves was used to generate the elevation map of the crystal shown above.
 
 ## references ##
 [1] G. Diambrini-Palazzi, "High-Energy Bremsstrahlung and Electron Pair Production in Thin Crystals", Revs. Mod. Phys. vol 40 (1968) p. 611.  
