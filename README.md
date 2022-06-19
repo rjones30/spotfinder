@@ -13,10 +13,19 @@ heating and radiation damage to the crystal. The crystal must be a nearly perfec
 with low atomic number to reduce the background from the incoherent bremsstrahlung process that is always present. Incoherent bremsstrahlung produces a 
 low-energy background that is neither monochromatic nor polarized, and degrades the properties of the coherernt bremsstrahlung beam. This combination of
 proprties makes **single-crystal diamond** a unique choice for a high-energy coherent bremsstrahlung source. Below is an image of a single-crystal diamond
-radiator mounted for use in the coherent bremsstrahlung beamline in Hall D at Jefferson Lab.
+radiator mounted for use in the coherent bremsstrahlung beamline in Hall D at Jefferson Lab. 
 <p align="center">
   <img src="JD70-103_front_view.svg" width="300">
 </p>
+
+## X-ray topograhs ##
+The above false-color image is known as an X-ray "rocking curve" topograph. Displayed in the composite graphic is a 7mm x 7mm single-crystal diamond that
+has been polished down to a final thickness of just 50 microns (um) and attached n the lower right corner with conductive epoxy to an aluminum mounting tab.
+In spite of being so thin, the rigidity and thermal conductivity of diamond is sufficient to make such a target self-supporting and self-cooled when inserted
+into a high-energy electron beam. The color in the image represents an elevation map of one of the planes in the diamond crystal, ranging from low (blue) to
+high (yellow) relative to an ideal plane aligned with the crystal at three of its corners. The total displacement from low to high in this image is only
+600 nm, but this slight imperfection is enough to significantly distort the properties of the coherent bremsstrahlung beam produced by the diamond by
+12 GeV electrons.
 
 ## references ##
 [1] G. Diambrini-Palazzi, "High-Energy Bremsstrahlung and Electron Pair Production in Thin Crystals", Revs. Mod. Phys. vol 40 (1968) p. 611.  
