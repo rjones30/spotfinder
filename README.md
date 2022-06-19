@@ -19,10 +19,10 @@ radiator mounted for use in the coherent bremsstrahlung beamline in Hall D at Je
 </p>
 
 ## references ##
-[1] G. Diambrini-Palazzi, "High-Energy Bremsstrahlung and Electron Pair Production in Thin Crystals", Revs. Mod. Phys. vol 40 (1968) p. 611.
-[2] U. Timm, "Coherent bremsstrahlung of electrons in crystals", Fortschr. Phys. vol. 17 (1969) p. 765.
-[3] "Coherent Radiation Sources", edited by A. W. Såenz and H. Uberall, Springer-Verlag, Berlin, 1985.
-[4] W. Kaune, G. Miller, W. Oliver, R.W. Williams, and K.K. Young, "Inclusive cross sections for pion and proton production by photons using collimated coherent bremsstrahlung", Phys. Rev. vol 11-3 (1975) pp. 478-494.
-[5] H. Bilokon, G. Bologna, F. Celani, B. D'Ettorre Piazzoli, R. Falcioni, G. Mannocchi, and P. Picchi, "Coherent bremsstrahlung in crystals as a tool for producing high energy photon beams to be used in photoproduction experiments at CERN SPS", Nuclear Inst. and Meth. 204 (1983), pp. 299--310.
-[6] G. Yang, R.T. Jones, F. Klein, K. Finkelstein, K. Livingston, “Rocking Curve Imaging for Diamond Radiator Crystal Selection”, Journal of Diamond & Related Materials 19 (2010) 719.
-[7] K. Finkelstein, R.T. Jones, A. Pauling, D.C. Sagan, Z. Brown, and D S. Misra, “High Resolution, Monochromatic X-ray Topography Capability at CHESS”, Proceedings of the 12th International Conference on Synchrotron Radiation Instrumentation (SRI-2015),  AIP Conf. Proc. 1741(2016) , 010001.
+[1] G. Diambrini-Palazzi, "High-Energy Bremsstrahlung and Electron Pair Production in Thin Crystals", Revs. Mod. Phys. vol 40 (1968) p. 611.  
+[2] U. Timm, "Coherent bremsstrahlung of electrons in crystals", Fortschr. Phys. vol. 17 (1969) p. 765.  
+[3] "Coherent Radiation Sources", edited by A. W. Såenz and H. Uberall, Springer-Verlag, Berlin, 1985.  
+[4] W. Kaune, G. Miller, W. Oliver, R.W. Williams, and K.K. Young, "Inclusive cross sections for pion and proton production by photons using collimated coherent bremsstrahlung", Phys. Rev. vol 11-3 (1975) pp. 478-494.  
+[5] H. Bilokon, G. Bologna, F. Celani, B. D'Ettorre Piazzoli, R. Falcioni, G. Mannocchi, and P. Picchi, "Coherent bremsstrahlung in crystals as a tool for producing high energy photon beams to be used in photoproduction experiments at CERN SPS", Nuclear Inst. and Meth. 204 (1983), pp. 299--310.  
+[6] G. Yang, R.T. Jones, F. Klein, K. Finkelstein, K. Livingston, “Rocking Curve Imaging for Diamond Radiator Crystal Selection”, Journal of Diamond & Related Materials 19 (2010) 719.  
+[7] K. Finkelstein, R.T. Jones, A. Pauling, D.C. Sagan, Z. Brown, and D S. Misra, “High Resolution, Monochromatic X-ray Topography Capability at CHESS”, Proceedings of the 12th International Conference on Synchrotron Radiation Instrumentation (SRI-2015),  AIP Conf. Proc. 1741(2016) , 010001.  
