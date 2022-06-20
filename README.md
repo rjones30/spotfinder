@@ -55,7 +55,22 @@ enhancement, and the beam linear polarization spectrum are updated in real time.
 ![image](https://user-images.githubusercontent.com/7832920/174476497-023c0799-5d79-458b-ae62-87684895a8ff.png)
 ![image](https://user-images.githubusercontent.com/7832920/174476541-8f9b79ac-c47c-4989-a7d5-c90bf01793d1.png)
 
-## frontend installation ##
+## installation
+
+The spotfinder webapp is divided into a frontend consisting of a wgsi script, and a backend where tasks requiring heavy computation are performed.
+Some of the plots produced by the spotfinder visualization system are quickly generated based on stored output from previous analysis of X-ray rocking
+curve data. These tasks are performed by methods in the spotfinder.py wsgi script. Other plots require extensive computation based on those data to generate.
+The computation of coherent bremsstrahlung beam properties like intensity, coherent enhancmeent, or polarization based on a choice of diamond position /
+orientation and beam spot parameters is performed using the methods of C++ class CobremsGeneration (see source file CobremsGeneration.cc, header file
+CobremsGeneration.hh). A Monte Carlo algorithm is used to integrate the spectral properties over the area of the crystal weighted by the beam spot intensity.
+Typically, a single plot would require an hour or more of processing time on a modern Intel or AMD cpu to generate an intensity or enhancement spectrum, and
+twice that for a polarization spectrum, for the method to achieve adequate precision in the generated output. Fortunately, the Monte Carlo integration method
+is ideally suited for parallelization on multiple cpu resources across a cluster. This is the purpose of the backend installation. Deploying the spotfinder
+backend on a cluster with 2400 cores has demonstrated response times of 5 seconds for updating intensity and enhancement spectra in the spotfinder webapp,
+and 10 seconds for updating polarization spectra. While these are perhaps not as fast as one would wish for a truly interactive tool, they are adequate for
+enabling interactive exploration of the surface of a diamond and the dependence of photon beam properties on beam spot placement and size.
+
+### frontend installation ###
 
 Spotfinder is designed to run as a web application served by an apache webserver under mod_wsgi. Installation and setup of an apache webserver is beyond
 the scope of this document. In what follows, it is assumed that the webserver is installed and running. First, you need to chose where under your 
@@ -147,10 +162,11 @@ to https://your-apache-server/spotfinder and you should see an image similar to 
 
 ## backend installation ##
 
+
 ## other toolkit components ##
 
-Some of the plots produced by the spotfinder visualization system are quickly generated based on previous analysis of X-ray rocking curve data taken at
-the Cornell High Energy Synchrotron Light Source (CHESS) and the Canadian Light Source (CLS). These topographs are stored in ROOT files that are part of
+The spotfinder visualization system is designed to provide a browsable interface to results of already-perfomred analyses of X-ray rocking curve data taken
+at the Cornell High Energy Synchrotron Light Source (CHESS) and the Canadian Light Source (CLS). These topographs are stored in ROOT files that are part of
 the install base for this project. For example, the file JD70-103_couples.root and JD70-103_results.root together contain the complete set of rocking curve
 topographs taken on radiator JD70-103 during a 2-day run at CLS in June, 2019. The raw images taken using the X-ray camera on the BMIT beamline at CLS are
 also available upon request, but they are not included in the base distribution because of the large data volume that would entail. For anyone who may be
