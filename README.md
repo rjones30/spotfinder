@@ -162,6 +162,26 @@ to https://your-apache-server/spotfinder and you should see an image similar to 
 
 ## backend installation ##
 
+The backend is powered by the Celery python task orchestration system, layered on top of the RabbitMQ message passing service. RabbitMQ only needs to be
+installed on a single host within the production cluster. The resource demand it places on the service host is relatively light. The simplest configuration
+would be to install it and start it as a service on the same host as runs the apache webserver hosting the application.
+
+```
+$ sudo yum install rabbitmq-server
+$ sudo systemctl start rabbitmq-server
+$ sudo systemctl enable rabbitmq-server
+```
+
+You may want to enable the web admin interface to rabbitmq, in which case the following additional commands would prove useful.
+
+```
+$ sudo rabbitmqctl add_user admin <a_secret_password_for_your_rabbitmq_service>
+$ sudo rabbitmqctl set_user_tags admin administrator
+$ sudo rabbitmqctl set_permissions -p / admin ".*" ".*" ".*"
+$ sudo rabbitmq-plugins enable rabbitmq_management
+$ sudo systemctl restart rabbitmq-server
+$ sudo systemctl status rabbitmq-server
+```
 
 ## other toolkit components ##
 
