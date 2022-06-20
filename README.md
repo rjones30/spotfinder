@@ -60,7 +60,7 @@ enhancement, and the beam linear polarization spectrum are updated in real time.
 The spotfinder webapp is divided into a frontend consisting of a wgsi script, and a backend where tasks requiring heavy computation are performed.
 Some of the plots produced by the spotfinder visualization system are quickly generated based on stored output from previous analysis of X-ray rocking
 curve data. These tasks are performed by methods in the spotfinder.py wsgi script. Other plots require extensive computation based on those data to generate.
-The computation of coherent bremsstrahlung beam properties like intensity, coherent enhancmeent, or polarization based on a choice of diamond position /
+The computation of coherent bremsstrahlung beam properties like intensity, coherent enhancement, or polarization based on a choice of diamond position /
 orientation and beam spot parameters is performed using the methods of C++ class CobremsGeneration (see source file CobremsGeneration.cc, header file
 CobremsGeneration.hh). A Monte Carlo algorithm is used to integrate the spectral properties over the area of the crystal weighted by the beam spot intensity.
 Typically, a single plot would require an hour or more of processing time on a modern Intel or AMD cpu to generate an intensity or enhancement spectrum, and
