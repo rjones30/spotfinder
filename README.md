@@ -76,7 +76,7 @@ Open your local copy in a text editor and check that the following lines near th
 docroot = "/var/www/html"
 topdir = "/spotfinder"
 tmpdir = "/spotfinder/tmp"
-self_script = "https://my-webserver-address/spotfinder"
+self_script = "https://my-apache-server/spotfinder"
 ```
 
 Local scripts running on the webserver must be able to find the spotfinder directory you just created at f"{docroot}{topdir}" and the tmp area where output
