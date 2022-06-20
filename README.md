@@ -184,7 +184,61 @@ $ sudo systemctl status rabbitmq-server
 ```
 
 You can then acccess the webadmin interface by directing a web browser running on localhost to the following URL: http://localhost:15672 and entering admin
-for the userid, and whatever you substituted for <a_secret_password_for_your_rabbitmq_service> for the password.
+for the userid, and whatever you substituted for <a_secret_password_for_your_rabbitmq_service> for the password. Access to the standard ports used by the
+rabbitmq server (5672 for messaging clients, 15672, 25672 for webadmin) should normally be blocked from outside your local cluster LAN. If this is firewall
+restriction meets the security requirements for your site, the default install configuration for rabbitmq-server should be sufficient. If this is not
+adequate, more secure authentication/authorization options exist within the rabbitmq-server configuration. See the rabbitmq documentation for more details 
+on this.
+
+Once the rabbitmq-server is up and running, you are ready to start the backend server cobrems_worker.py on your cluster worker nodes. Open the script
+spotfinder/cobrems_worker.sh and update the second line to point to a cluster-wide path to your spotfinder installation directory. Choose a non-privileged
+account, eg. guest that is configured on your worker nodes and make a copy of the spotfinder/ install directory in the homedir for the guest user. If this
+is not at the top level of the guest user homedir, you will need to open cobrems_worker.sh in a text editor and enter the cluster-wide path to the
+spotfinder directory on the line starting "cd". Note that this directory needs to be owned and writable by the guest user.
+
+Log in as the guest user on one of the worker nodes and verify that executing the spotfinder/cobrems_worker.sh script starts up a stack of celery processes
+to receive message from the spotfinder.py script via the rabbitmq-server messaging server. The address of the server is set by default to an invalid
+address in cobrems_worker.py:
+
+```
+app = Celery("cobrems_worker", backend="rpc://",
+             broker="amqp://guest@my-rabbitmq-server//")
+```
+
+The backend="rpc://" should be left unchanged, but the broker string should be changed from my-rabbitmq-server to the name of the server where the local
+instance of rabbitmq-server is running. As a final step, you need to start up the celery worker processes on all available worker nodes on your cluster
+and have them subscribe to the rabbitmq-server, waiting for work from spotfinder. One simple way to start the cobrems-worker servers would be to add the
+following lines to /var/spool/cron/root on all available workers.
+
+```
+# restart the celery service (spotfinder webapp)
+*/10 * * * * sudo -u osgusers /home/osgusers/spotfinder/cobrems_worker.sh >/dev/null 2>&1
+```
+
+This checks every 10 minutes if the celery workers are running, and restarts them as user guest if not. The userid "guest" can be changed to whatever
+non-privileged account is available for running short-lived background processes on your cluster. Note that demand for processing by these workers is
+typically very brief and sporadic, typically lasting only 5 seconds for each request to spotfinder by a web client. These worker processes do not occupy
+a significant amount of memory while they sit idle waiting for work, and they can quite happily coexist on a cluster worker with a full local of batch
+jobs running under the standard cluster batch production system. To test if the cobrems_worker service is up and running, carry out the following
+test sequence from the commandline as user guest.
+
+```
+$ cd spotfinder
+$ source setup.sh
+$ python3
+>>> import cobrems_worker
+>>> h = cobrems_worker.test_intensity_hist()
+>>> h = cobrems_worker.test_intensity_hist()
+collecting results from 200 tasks
+batch 0 finished with 200 still pending
+batch 0 finished with 200 still pending
+batch 0 finished with 200 still pending
+batch 0 finished with 1 still pending
+batch 0 finished with 0 still pending
+wall time used was 4.684188604354858
+```
+
+If the test finishes successfully, as in the example listing above, the cobrems_worker backend is up and running.
 
 ## other toolkit components ##
 
