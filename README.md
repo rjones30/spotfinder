@@ -55,7 +55,7 @@ enhancement, and the beam linear polarization spectrum are updated in real time.
 ![image](https://user-images.githubusercontent.com/7832920/174476497-023c0799-5d79-458b-ae62-87684895a8ff.png)
 ![image](https://user-images.githubusercontent.com/7832920/174476541-8f9b79ac-c47c-4989-a7d5-c90bf01793d1.png)
 
-## installation ##
+## frontend installation ##
 
 Spotfinder is designed to run as a web application served by an apache webserver under mod_wsgi. Installation and setup of an apache webserver is beyond
 the scope of this document. In what follows, it is assumed that the webserver is installed and running. First, you need to chose where under your 
@@ -89,7 +89,62 @@ with python by default, but some like urllib may need to be downloaded and insta
 $ sudo pip install shutils urllib2 numpy pickle base64 random
 ```
 
+Spotfinder depends on the ROOT data analysis and visualization framework from CERN. Pre-built binary packages of ROOT are available at https://root.cern.ch 
+for a number of common platforms. ROOT is open-source, so it can also be downloaded and installed from sources using common open-source tools like cmake and
+the gnu C++ compilers. If you decide to install ROOT from sources, make sure you enable the python module (pyroot) in your build. Once this is done, update
+the spotfinder/setup.sh script to include ROOT in the shell environment. Here is an example that I use on one of my local spotfinder servers. You will need
+to replace my local ROOT install path /cvmfs/oasis.opensciencegrid.org/gluex/root-6.22.06/x86_64. For the version of ROOT, any recent release
+of ROOT version 6 will work with spotfinder.
 
+```
+export PATH=$PATH:/cvmfs/oasis.opensciencegrid.org/gluex/root-6.22.06/x86_64/bin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/cvmfs/oasis.opensciencegrid.org/gluex/root-6.22.06/x86_64/lib
+export PYTHONPATH=$PYTHONPATH:/cvmfs/oasis.opensciencegrid.org/gluex/root-6.22.06/x86_64/lib
+```
+
+With ROOT installed and the setup.sh script updated with the ROOT location, you are now ready to complete the installation. As the apache user within the
+spotfinder directory you installed under DocumentRoot in a previous step, do the following.
+
+```
+$ source setup.sh
+$ root -l
+root [0] .x makerootvisuals.C
+Building the C++ rootvisuals_C.so and supporting libraries
+for the spotfinder tool. Make sure that LD_PRELOAD is not
+set in your environment, or you are in for a bad surprise!
+root [1] .q
+$ python3
+>>> import spotfinder
+>>> ^d
+```
+
+If the above steps complete successfully, the frontend installation is nearly finished. All that remains is to configure spotfinder.py as a recognized
+wsgi script within your apache server. There is no one right way to do this, but one way that works on a linux system would be to add the following lines
+to /etc/httpd/conf.d/ssl.conf:
+
+```
+# Setup for osgprod WSGI module [Richard Jones, 11-16-2020]
+WSGIScriptAlias /spotfinder /var/www/wsgi-scripts/spotfinder.py
+<Directory "/var/www/wsgi-scripts">
+# Comment out the following line to enable running of wsgi scripts
+# in multiple python subinterpreters, incompatible with matplotlib!
+#WSGIApplicationGroup %{GLOBAL}
+SetHandler wsgi-script
+Options ExecCGI
+<IfVersion < 2.4>
+   Order allow,deny
+   Allow fromall
+</IfVersion>
+<IfVersion >= 2.4>
+   Require all granted
+</IfVersion>
+</Directory>
+
+```
+
+If you are following closely to the above example, copy the spotfinder.py script that you modified earlier to the new location at /var/www/wsgi-scripts
+and assign the ownership to the appropriate user, either apache or root, then restart the apache server, eg. systemctl restart httpd. Direct a web browser
+to https://your-apache-server/spotfinder and you should see an image similar to one of the ones above in this README. This completes the frontend installation.
 
 ## references ##
 [1] G. Diambrini-Palazzi, "High-Energy Bremsstrahlung and Electron Pair Production in Thin Crystals", Revs. Mod. Phys. vol 40 (1968) p. 611.  
