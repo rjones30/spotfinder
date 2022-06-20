@@ -24,21 +24,16 @@ import pickle
 import base64
 import random
 
-#import ROOT
-#ROOT.gSystem.AddDynamicPath("/var/www/html/spotfinder_dev")
-#ROOT.gSystem.AddDynamicPath("/usr/lib64")
-#ROOT.gSystem.Load("libboost_python3.so")
-#ROOT.gSystem.Load("CobremsGeneration_cc.so")
-#ROOT.gSystem.Load("rootvisuals_C.so")
+# The following variables MUST be customized for the local site
+docroot = "/var/www/html"
+topdir = "/spotfinder"
+tmpdir = "/spotfinder/tmp"
+self_script = "https://my-apache-server/spotfinder"
 
-sys.path.append("/var/www/html/spotfinder_dev")
+sys.path.append(f"{docroot}{topdir}")
 import cobrems_worker
 ROOT = cobrems_worker.ROOT
 
-docroot = "/var/www/html"
-topdir = "/spotfinder_dev"
-tmpdir = "/spotfinder_dev/tmp"
-self_script = "https://cn410.storrs.hpc.uconn.edu/spotfinder"
 radiator_names = ["JD70-103", "JD70-106", "JD70-107", "JD70-109"]
 radiator_views = {"front": "_front_view.png", "back": "_back_view.png"}
 

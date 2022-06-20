@@ -8,6 +8,7 @@
 # author: richard.t.jones at uconn.edu
 # version: july 14, 2022
 
+import os
 import pickle
 import base64
 import random
@@ -15,7 +16,7 @@ import time
 import numpy as np
 
 import ROOT
-ROOT.gSystem.AddDynamicPath("/home/rtj02001/spotfinder_dev")
+ROOT.gSystem.AddDynamicPath(os.environ['COBREMS_WORKER'])
 ROOT.gSystem.AddDynamicPath("/usr/lib64")
 ROOT.gSystem.Load("libboost_python3.so")
 #ROOT.gSystem.Load("CobremsGeneration_cc.so")
