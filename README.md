@@ -139,7 +139,6 @@ Options ExecCGI
    Require all granted
 </IfVersion>
 </Directory>
-
 ```
 
 If you are following closely to the above example, copy the spotfinder.py script that you modified earlier to the new location at /var/www/wsgi-scripts
