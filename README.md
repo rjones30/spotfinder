@@ -183,6 +183,9 @@ $ sudo systemctl restart rabbitmq-server
 $ sudo systemctl status rabbitmq-server
 ```
 
+You can then acccess the webadmin interface by directing a web browser running on localhost to the following URL: http://localhost:15672 and entering admin
+for the userid, and whatever you substituted for <a_secret_password_for_your_rabbitmq_service> for the password.
+
 ## other toolkit components ##
 
 The spotfinder visualization system is designed to provide a browsable interface to results of already-perfomred analyses of X-ray rocking curve data taken
