@@ -57,6 +57,40 @@ enhancement, and the beam linear polarization spectrum are updated in real time.
 
 ## installation ##
 
+Spotfinder is designed to run as a web application served by an apache webserver under mod_wsgi. Installation and setup of an apache webserver is beyond
+the scope of this document. In what follows, it is assumed that the webserver is installed and running. First, you need to chose where under your 
+DocumentRoot to install spotfinder. In these examples, it is assumed to be /var/www/html/spotfinder, but any other location under DocumentRoot would be
+just as good.
+
+```
+$ cd /var/www/html
+$ sudo git clone https://github.com/rjones30/spotfinder
+$ chown -R apache:apache spotfinder
+$ cd spotfinder
+```
+
+The core component of the spotfinder webapp is the spotfinder.py wsgi script found at the top level in the spotfinder directory you just created.
+Open your local copy in a text editor and check that the following lines near the top of the file agree with your local configuration.
+
+```
+docroot = "/var/www/html"
+topdir = "/spotfinder"
+tmpdir = "/spotfinder/tmp"
+self_script = "https://my-webserver-address/spotfinder"
+```
+
+Local scripts running on the webserver must be able to find the spotfinder directory you just created at f"{docroot}{topdir}" and the tmp area where output
+graphics files will be stored at f"{docroot}{tmpdir}". Remote users must be able to access files in these same two directories at f"{self_script}{topdir}"
+and f"{self_script}{tmpdir}" respectively. Just before the section quoted above, a set of import statements is listed. Review this list and install any
+dependent python libraries that are not already installed on your system. You can do this either as the apache user or as root. Most of these are isntalled
+with python by default, but some like urllib may need to be downloaded and installed. Do this before continuing.
+
+```
+$ sudo pip install shutils urllib2 numpy pickle base64 random
+```
+
+
+
 ## references ##
 [1] G. Diambrini-Palazzi, "High-Energy Bremsstrahlung and Electron Pair Production in Thin Crystals", Revs. Mod. Phys. vol 40 (1968) p. 611.  
 [2] U. Timm, "Coherent bremsstrahlung of electrons in crystals", Fortschr. Phys. vol. 17 (1969) p. 765.  
