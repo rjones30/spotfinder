@@ -25,7 +25,7 @@ ROOT.gSystem.Load("rootvisuals_C.so")
 from celery import Celery
 
 app = Celery("cobrems_worker", backend="rpc://",
-             broker="amqp://guest@cn410.storrs.hpc.uconn.edu//")
+             broker="amqp://guest@my-cobrems-worker-server//")
 app.conf.update(result_expires=1200)
 
 @app.task
