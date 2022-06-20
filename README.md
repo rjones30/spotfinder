@@ -145,6 +145,36 @@ If you are following closely to the above example, copy the spotfinder.py script
 and assign the ownership to the appropriate user, either apache or root, then restart the apache server, eg. systemctl restart httpd. Direct a web browser
 to https://your-apache-server/spotfinder and you should see an image similar to one of the ones above in this README. This completes the frontend installation.
 
+## backend installation ##
+
+## other toolkit components ##
+
+Some of the plots produced by the spotfinder visualization system are quickly generated based on previous analysis of X-ray rocking curve data taken at
+the Cornell High Energy Synchrotron Light Source (CHESS) and the Canadian Light Source (CLS). These topographs are stored in ROOT files that are part of
+the install base for this project. For example, the file JD70-103_couples.root and JD70-103_results.root together contain the complete set of rocking curve
+topographs taken on radiator JD70-103 during a 2-day run at CLS in June, 2019. The raw images taken using the X-ray camera on the BMIT beamline at CLS are
+also available upon request, but they are not included in the base distribution because of the large data volume that would entail. For anyone who may be
+interested, the complete set of tools used to turn the sequence of raw camera images (tif format) collected using the BMIT data acquisition system into
+rocking curve topographs is included as a part of this spotfinder code base. For someone who simply wants to browse the results and visualize the photon
+beam properties that would be produced using the crystal as a radiator in Hall D at Jefferson Lab, understanding the details of how these topographic
+analysis tools work is not needed. Since visualization of the results is the sole purpose of the spotfinder tool, no further details on these tools are
+presented here, other than to simply list their name and purpose:
+
+1. rmaker.C - ROOT macro to read in a series of raw tif images and convert them to rocking curve topographs for subsequent fitting with rc_fitter
+2. rcfitter.C - ROOT macro to loop over a single rocking curve scan and perform a peak fit for each pixel in the images
+3. run_rcfitter.C - ROOT macro to automate the running of rcfitter over a series of rocking curve scans for a single target
+4. dofits.C - ROOT macro to automate calling run_rcfitter for a batch of rocking curve scans over several targets during an experimental run
+5. rcpicker.C - ROOT macro to browse the results of a rocking curve scan after it has been fitted by rc_fitter
+6. rockmean.C - ROOT macro, simplified interface to rocking curve scan fit results, mainly used before rcpicker was available
+7. destripe.py - pyroot toolkit to correct rocking curve topographs for nonlinearity in the rocking angle stepper motor
+
+Here is a list of ROOT-based C++ objects that hold and manipulate the results produced using the above-listed tools.
+
+1. Map2D (Map2D.cc, Map2D.h) - base class for topographic images
+2. Couples (Couples.C, Couples.h) - holder for output from coupled analysis of a complementary quad of rocking curve scans taken of a single target sample 
+3. makerootlibs.C - ROOT macro to load definitions of the above topograph C++ classes before opening a ROOT file containing such objects
+
+
 ## references ##
 [1] G. Diambrini-Palazzi, "High-Energy Bremsstrahlung and Electron Pair Production in Thin Crystals", Revs. Mod. Phys. vol 40 (1968) p. 611.  
 [2] U. Timm, "Coherent bremsstrahlung of electrons in crystals", Fortschr. Phys. vol. 17 (1969) p. 765.  
