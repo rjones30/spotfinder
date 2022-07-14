@@ -21,7 +21,7 @@
 
 #include <CobremsGeneration.hh>
 
-TString resultsdir("/home/rtj02001/spotfinder_dev/tmp");
+TString resultsdir("/var/www/html/tools/spotfinder/tmp");
 
 CobremsGeneration cobrems(12.0, 9.0);
 
