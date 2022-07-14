@@ -27,8 +27,8 @@ import time
 
 # The following variables MUST be customized for the local site
 docroot = "/var/www/html"
-topdir = "/spotfinder"
-tmpdir = "/spotfinder/tmp"
+topdir = "/tools/spotfinder"
+tmpdir = "/tools/spotfinder/tmp"
 self_script = "https://my-apache-server/spotfinder"
 
 sys.path.append(f"{docroot}{topdir}")
