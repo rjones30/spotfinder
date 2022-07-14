@@ -23,6 +23,7 @@ import numpy as np
 import pickle
 import base64
 import random
+import time
 
 # The following variables MUST be customized for the local site
 docroot = "/var/www/html"
@@ -198,6 +199,7 @@ def fill_cobrems_intensity(args, nsamples, htilt, nsplit=1, batchsize=500):
             args['penergy0'] = penergy0_ref + j * pesplit
             args['penergy1'] = penergy0_ref + (j+1) * pesplit
             procs.append(cobrems_worker.fill_intensity_hist.delay(args))
+      retries = 0
       while len(procs) > 0:
          pending = []
          for proc in procs:
@@ -208,11 +210,14 @@ def fill_cobrems_intensity(args, nsamples, htilt, nsplit=1, batchsize=500):
                   htot.Add(h)
                else:
                   htot = h
+            elif retries > 50:
+               proc.forget()
             else:
                pending.append(proc)
          procs = pending
          if len(procs) > 0:
             time.sleep(1)
+            retries += 1
    args['thetah'] = thetah_ref
    args['thetav'] = thetav_ref
    args['penergy0'] = penergy0_ref
@@ -259,6 +264,7 @@ def fill_cobrems_polarintensity(args, nsamples, htilt, nsplit=1, batchsize=500):
             setattr(p1, 'unpolarized_or_polarized', 1)
             procs.append(p0)
             procs.append(p1)
+      retries = 0
       while len(procs) > 0:
          pending = []
          for proc in procs:
@@ -270,11 +276,14 @@ def fill_cobrems_polarintensity(args, nsamples, htilt, nsplit=1, batchsize=500):
                   htot[p].Add(h)
                else:
                   htot[p] = h
+            elif retries > 50:
+               proc.forget()
             else:
                pending.append(proc)
          procs = pending
          if len(procs) > 0:
             time.sleep(1)
+            retries += 1
    args['thetah'] = thetah_ref
    args['thetav'] = thetav_ref
    args['penergy0'] = penergy0_ref
@@ -759,13 +768,16 @@ function includeHTML() {{
           }}
         }}
       }}
-      xhttp.open("GET", file, true);
       if (pending_requests > max_pending_requests) {{
+        xhttp["this_request_url"] = file;
         queued_requests.push(xhttp);
+        console.log(`queued request count is now ${{queued_requests.length}}`);
       }}
       else {{
-        pending_requests += 1;
+        xhttp.open("GET", file, true);
         xhttp.send();
+        pending_requests += 1;
+        console.log(`pending request count is now ${{pending_requests}}`);
       }}
       return;
     }}
@@ -774,6 +786,7 @@ function includeHTML() {{
     /* only the latest request is worth sending */
     xhttp = queued_requests.pop();
     queued_requests.length = 0;
+    xhttp.open("GET", xhttp["this_request_url"], true);
     xhttp.send();
   }}
 }}
