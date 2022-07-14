@@ -25,7 +25,7 @@ ROOT.gSystem.Load("rootvisuals_C.so")
 from celery import Celery
 
 app = Celery("cobrems_worker", backend="rpc://",
-             broker="amqp://guest@my-rabbitmq-server//")
+             broker=f"amqp://guest@{os.environ['RABBITMQ_SERVER']}//")
 app.conf.update(result_expires=1200)
 
 @app.task

@@ -56,6 +56,7 @@
 int nsearchpaths = 4;
 std::string searchpath[] = 
 {
+   "/var/www/html/tools/spotfinder/tmp",
    "/home/www/docs/halld/diamonds/spotfinder/tmp",
    "/home/www/docs/halld/diamonds/spotfinder/results",
    "root://nod29.phys.uconn.edu//Gluex/beamline/diamonds/cls-6-2019/results/",
