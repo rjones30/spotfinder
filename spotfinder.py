@@ -38,6 +38,9 @@ ROOT = cobrems_worker.ROOT
 radiator_names = ["JD70-103", "JD70-106", "JD70-107", "JD70-109"]
 radiator_views = {"front": "_front_view.png", "back": "_back_view.png"}
 
+mElectron = 0.51099895e-3 # GeV/c^2
+qDiamond = 9.8e-6 # GeV/c
+
 def draw_beamspot(args, size_px=600):
    """
    Creates an image of the electron beam spot at the Hall D radiator,
@@ -302,6 +305,30 @@ def get_form_var(var, pars, dtype, default, unit="", err=0):
       val = default
    return val
 
+def snap_crystal_orientation(args):
+   Eedge = args['snapedge']
+   hlist = make_beamtilt(args)
+   thetah_offset = hlist[0].ProjectionX('px').GetMean()
+   thetav_offset = hlist[0].ProjectionY('py').GetMean()
+   Ebeam = args['ebeam']
+   gamma = Ebeam / mElectron
+   one_minus_beta2 = 1 / gamma**2
+   one_minus_beta = one_minus_beta2 / 2
+   Qsintheta = ((Ebeam * Eedge * one_minus_beta - qDiamond**2 / 2)
+                / (Ebeam - Eedge))
+   theta_tilt = np.arcsin(Qsintheta / qDiamond) * 1000
+   theta_tip = 50 # a good choice, not unique
+   for i in range(5):
+      one_minus_beta = one_minus_beta2 / (2 - one_minus_beta)
+   if args['snapact'] == 'snap_perp':
+      output = [f"{theta_tip}, {theta_tilt - thetav_offset}".encode()]
+   elif args['snapact'] == 'snap_para':
+      output = [f"{theta_tilt - thetah_offset}, {theta_tip}".encode()]
+   else:
+      output = [f"0, 0".encode()]
+   status = "200 OK"
+   return status,output
+
 def plot_beamspot_on_topograph(args, size_px=600):
    imgf = (f"topospot_{args['radname']},{args['iradview']}" +
            f",{args['xoffset']},{args['yoffset']},{args['phideg']}" +
@@ -311,9 +338,11 @@ def plot_beamspot_on_topograph(args, size_px=600):
    if not os.path.exists(imgpath):
       hlist = make_beamtilt(args)
       g = ROOT.draw_beamspot_on_topo(hlist[1], hlist[2], size_px, imgpath)
+   hfile = imgf[:-4] + ".root"
    output = [f"""
     <img src="{tmpdir}/{imgf}">
-    Iteration number {args['niter']} for {imgf}
+    Iteration number {args['niter']} for 
+    <a href="{tmpdir}/{hfile}">{hfile}</a>
    """.encode()]
    status = "200 OK"
    return status,output
@@ -327,9 +356,11 @@ def plot_tilt_intensity_map(args, size_px=600):
    if not os.path.exists(imgpath):
       hlist = make_beamtilt(args)
       g = ROOT.draw_beam_tilt(hlist[0], size_px, imgpath)
+   hfile = imgf[:-4] + ".root"
    output = [f"""
     <img src="{tmpdir}/{imgf}">
-    Iteration number {args['niter']} for {imgf}
+    Iteration number {args['niter']} for
+    <a href="{tmpdir}/{hfile}">{hfile}</a>
    """.encode()]
    status = "200 OK"
    return status,output
@@ -356,9 +387,11 @@ def plot_cobrems_intensity_spectrum(args, size_px=600):
       htot.GetXaxis().SetRange(i0, i1)
       htot.SetTitle(f"peak = {hmax:.3e}/s/GeV, integral = {hsum*binwidth:.3e}/s")
       g = ROOT.draw_cobrems_spectrum(htot, size_px, imgpath)
+   hfile = imgf[:-4] + ".root"
    output = [f"""
     <img src="{tmpdir}/{imgf}">
-    Iteration number {args['niter']} for {imgf}
+    Iteration number {args['niter']} for
+    <a href="{tmpdir}/{hfile}">{hfile}</a>
    """.encode()]
    status = "200 OK"
    return status,output
@@ -386,9 +419,11 @@ def plot_cobrems_enhancement_spectrum(args, size_px=600):
       henh.GetYaxis().SetTitle("collimated beam coherent enhancement")
       henh.SetTitle(f"peak = {hmax:.3f}, average = {hsum/(i1-i0+1):.3e}")
       g = ROOT.draw_cobrems_spectrum(henh, size_px, imgpath)
+   hfile = imgf[:-4] + ".root"
    output = [f"""
     <img src="{tmpdir}/{imgf}">
-    Iteration number {args['niter']} for {imgf}
+    Iteration number {args['niter']} for
+    <a href="{tmpdir}/{hfile}">{hfile}</a>
    """.encode()]
    status = "200 OK"
    return status,output
@@ -417,9 +452,11 @@ def plot_cobrems_polarization_spectrum(args, size_px=600):
       hpol.GetYaxis().SetTitle("linear polarization")
       hpol.SetTitle(f"peak = {hmax:.3e}, average = {hsum/(i1-i0+1):.3e}")
       g = ROOT.draw_cobrems_spectrum(hpol, size_px, imgpath)
+   hfile = imgf[:-4] + ".root"
    output = [f"""
     <img src="{tmpdir}/{imgf}">
-    Iteration number {args['niter']} for {imgf}
+    Iteration number {args['niter']} for
+    <a href="{tmpdir}/{hfile}">{hfile}</a>
    """.encode()]
    status = "200 OK"
    return status,output
@@ -444,6 +481,8 @@ def process_request(env, pars):
    args["phideg"] = get_form_var("rad_phideg", pars, dtype=float, default=0, unit="deg", err=logmsg)
    args["thetah"] = get_form_var("rad_thetah", pars, dtype=float, default=0, unit="mr", err=logmsg)
    args["thetav"] = get_form_var("rad_thetav", pars, dtype=float, default=0, unit="mr", err=logmsg)
+   args["snapact"] = get_form_var("snap_action", pars, dtype=str, default="off", err=logmsg)
+   args["snapedge"] = get_form_var("snap_edge", pars, dtype=float, default=6.0, unit="GeV", err=logmsg)
    args["tiltrange"] = get_form_var("rad_tilt_range", pars, dtype=float, default=1, unit="mr", err=logmsg)
    args["tiltresol"] = get_form_var("rad_tilt_resol", pars, dtype=float, default=0.01, unit="mr", err=logmsg)
    args["toplot"] = get_form_var("plot_type", pars, dtype=str, default="tilt", err=logmsg)
@@ -453,7 +492,9 @@ def process_request(env, pars):
    enhance_plot_options = 'checked="checked"' if args["toplot"] == "enhance" else ""
    polar_plot_options = 'checked="checked"' if args["toplot"] == "polar" else ""
    args["niter"] = get_form_var("iteration", pars, int, 0, logmsg)
-   if args["niter"] == 0:
+   if args["snapact"] != "off":
+      return snap_crystal_orientation(args)
+   elif args["niter"] == 0:
       pass
    elif args["toplot"] == "spot":
       return plot_beamspot_on_topograph(args)
@@ -491,8 +532,8 @@ def process_request(env, pars):
   z-index: -2;
 }}
 .canvas-overlay {{
-  width: 200px;
-  height: 200px;
+  width: 280px;
+  height: 280px;
   position: absolute;
   top: 0px;
   left: 0px;
@@ -542,7 +583,7 @@ Richard Jones, University of Connecticut, June 2022
   <div class="canvas-container">
    <img class="canvas-frame" src="{img}" alt="beam spot image at radiator"/>
    <img class="canvas-overlay" src="{tmpdir}/{args['radname'] + radiator_views[args['radview']]}"
-        id="radiator_image" style="transform: translate(180px,180px);" alt="radiator topographic image"/>
+        id="radiator_image" style="transform: translate(120px,180px);" alt="radiator topographic image"/>
   </div>
  </td>
  <td style="vertical-align: top;">
@@ -614,6 +655,15 @@ Richard Jones, University of Connecticut, June 2022
      <input type="range" min="-10" max="10" step="0.01" name="rad_thetavs" value="{args['thetav']}" class="slider" id="rad_thetav-slider" oninput="sliderInputHandler('rad_thetav')">
     </div></td>
    </tr><tr>
+    <td style="text-align: left;"><label for="snap_edge">snap primary edge to</label>
+    <input type="button" value="Para" onclick="snap_para()">
+    <input type="button" value="Perp" onclick="snap_perp()"> at:
+    <input type="hidden" id="snap_action" name="snap_action" value="off">
+    <td><input type="text" id="snap_edge" name="snap_edge" value="{args['snapedge']}" size="3">
+    </td><td>(GeV)</td>
+   </tr><tr>
+    <td style="text-align: left; vertical-align: bottom;" height="50"><b>What to plot</b></td>
+   </tr><tr>
     <td style="text-align: left;">
      <input type="radio" id="spot-plot" name="plot_type" value="spot" {spot_plot_options}>
      <label for="spot-plot">beam spot on crystal</label><br/>
@@ -648,11 +698,11 @@ Richard Jones, University of Connecticut, June 2022
       output.append(f"<p>{msg}</p>".encode())
    output.append(f"""
 <script>
-var radiator_px_per_mm = 21;
-var radiator_xshift_px = 200;
-var radiator_yshift_px = 200;
-var radiator_xcenter_px = 15;
-var radiator_ycenter_px = 20;
+var radiator_px_per_mm = 24.2;
+var radiator_xshift_px = 160;
+var radiator_yshift_px = 160;
+var radiator_xcenter_px = 0;
+var radiator_ycenter_px = 15;
 const max_pending_requests = 3;
 var pending_requests = 0;
 const queued_requests = [];
@@ -669,6 +719,8 @@ function sliderOutputHandler(id) {{
   animateRadiatorMotion();
 }}
 function animateRadiatorMotion() {{
+  var snapact = document.getElementById("snap_action");
+  snapact.setAttribute("value", "off");
   var xel = document.getElementById("rad_xoffset");
   var xoffset_px = +xel.value * radiator_px_per_mm + radiator_xshift_px;
   var yel = document.getElementById("rad_yoffset");
@@ -699,6 +751,8 @@ function refreshSpectrumPlots() {{
   var phideg = document.getElementById("rad_phideg").value;
   var thetah = document.getElementById("rad_thetah").value;
   var thetav = document.getElementById("rad_thetav").value;
+  var snapact = document.getElementById("snap_action").value;
+  var snapedge = document.getElementById("snap_edge").value;
   var toplot = "undefined";
   var elist = document.getElementsByTagName("input");
   for (i = 0; i < elist.length; i++) {{
@@ -730,6 +784,8 @@ function refreshSpectrumPlots() {{
   httpRequest += `&rad_phideg=${{phideg}}`;
   httpRequest += `&rad_thetah=${{thetah}}`;
   httpRequest += `&rad_thetav=${{thetav}}`;
+  httpRequest += `&snap_action=${{snapact}}`;
+  httpRequest += `&snap_edge=${{snapedge}}`;
   httpRequest += `&plot_type=${{toplot}}`;
   httpRequest += `&iteration=${{niter}}`;
   elmnt.setAttribute("iteration", niter.toString());
@@ -789,6 +845,88 @@ function includeHTML() {{
     xhttp.open("GET", xhttp["this_request_url"], true);
     xhttp.send();
   }}
+}}
+function snap_para() {{
+  var snapact = document.getElementById("snap_action");
+  snapact.setAttribute("value", "snap_para");
+  execute_snap();
+}}
+function snap_perp() {{
+  var snapact = document.getElementById("snap_action");
+  snapact.setAttribute("value", "snap_perp");
+  execute_snap();
+}}
+function execute_snap() {{
+  var rname = document.getElementById("radiator_name").value;
+  var rview = document.getElementById("radiator_view").value;
+  var benergy = document.getElementById("ebeam_energy").value;
+  var bxsigma = document.getElementById("ebeam_xsigma").value;
+  var bysigma = document.getElementById("ebeam_ysigma").value;
+  var bxycorr = document.getElementById("ebeam_xycorr").value;
+  var bxyresol = document.getElementById("ebeam_xyresol").value;
+  var penergy0 = document.getElementById("pbeam_energy_min").value;
+  var penergy1 = document.getElementById("pbeam_energy_max").value;
+  var peresol = document.getElementById("pbeam_energy_resol").value;
+  var xoffset = document.getElementById("rad_xoffset").value;
+  var yoffset = document.getElementById("rad_yoffset").value;
+  var phideg = document.getElementById("rad_phideg").value;
+  var thetah = document.getElementById("rad_thetah").value;
+  var thetav = document.getElementById("rad_thetav").value;
+  var snapact = document.getElementById("snap_action").value;
+  var snapedge = document.getElementById("snap_edge").value;
+  var toplot = "undefined";
+  var elist = document.getElementsByTagName("input");
+  for (i = 0; i < elist.length; i++) {{
+    if (elist[i].type == "radio" && elist[i].checked) {{
+      toplot = elist[i].value;
+    }}
+  }}
+  var httpRequest = "{self_script}";
+  httpRequest += `?radiator_name=${{rname}}`;
+  httpRequest += `&radiator_view=${{rview}}`;
+  httpRequest += `&ebeam_energy=${{benergy}}`;
+  httpRequest += `&ebeam_xsigma=${{bxsigma}}`;
+  httpRequest += `&ebeam_ysigma=${{bysigma}}`;
+  httpRequest += `&ebeam_xycorr=${{bxycorr}}`;
+  httpRequest += `&ebeam_xyresol=${{bxyresol}}`;
+  httpRequest += `&pbeam_energy_min=${{penergy0}}`;
+  httpRequest += `&pbeam_energy_max=${{penergy1}}`;
+  httpRequest += `&pbeam_energy_resol=${{peresol}}`;
+  httpRequest += `&rad_xoffset=${{xoffset}}`;
+  httpRequest += `&rad_yoffset=${{yoffset}}`;
+  httpRequest += `&rad_phideg=${{phideg}}`;
+  httpRequest += `&rad_thetah=${{thetah}}`;
+  httpRequest += `&rad_thetav=${{thetav}}`;
+  httpRequest += `&snap_action=${{snapact}}`;
+  httpRequest += `&snap_edge=${{snapedge}}`;
+  httpRequest += `&plot_type=${{toplot}}`;
+  var xhttp = new XMLHttpRequest();
+  xhttp.onreadystatechange = function() {{
+    if (this.readyState == 4) {{
+      if (this.status == 200) {{
+        var tilts = this.responseText.split(/[, ]+/);
+        var tilth = Math.round(parseFloat(tilts[0]) * 100) / 100;
+        var tiltv = Math.round(parseFloat(tilts[1]) * 100) / 100;
+        var thetahel = document.getElementById('rad_thetah');
+        var thetahsel = document.getElementById('rad_thetah-slider');
+        var thetavel = document.getElementById('rad_thetav');
+        var thetavsel = document.getElementById('rad_thetav-slider');
+        thetahel.value = tilth;
+        thetahsel.value = tilth;
+        thetavel.value = tiltv;
+        thetavsel.value = tiltv;
+        animateRadiatorMotion();
+      }}
+      else if (this.status == 404) {{
+        console.log("Page not found.");
+      }}
+      else if (this.status == 400) {{
+        console.log(`Bad Request: ${{httpRequest}}`);
+      }}
+    }}
+  }}
+  xhttp.open("GET", httpRequest, true);
+  xhttp.send();
 }}
 </script>
 </body>
