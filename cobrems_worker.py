@@ -49,6 +49,13 @@ def fill_intensity_hist(args, polarized=0):
    h = ROOT.gROOT.FindObject("intensity")
    if h:
       h.Delete()
+   ROOT.cobrems.setBeamErms(args["ebeamrms"])
+   ROOT.cobrems.setBeamEmittance(args["emittance"])
+   ROOT.cobrems.setCollimatorSpotrms(args["vspotrms"] * 1e-3)
+   ROOT.cobrems.setCollimatorDistance(args["coldist"])
+   ROOT.cobrems.setCollimatorDiameter(args["coldiam"] * 1e-3)
+   ROOT.cobrems.setTargetThickness(args["radthick"] * 1e-6)
+   ROOT.cobrems.setTargetCrystal("diamond")
    hlist = ROOT.cobrems_intensity(args['radname'], args['iradview'],
                                   args['ebeam'], args['ibeam'], 
                                   args['xyresol'],

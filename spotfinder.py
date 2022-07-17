@@ -59,6 +59,27 @@ def draw_beamspot(args, size_px=600):
       rc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
    return f"{tmpdir}/{img2}"
 
+def unique_radiator_string(args):
+   """
+   Generates a unique string out of the contents of args
+   related to the electron beam at the entrance to the radiator.
+   """
+   return (f"{args['radname']},{args['iradview']}" +
+           f",{args['ebeam']},{args['penergy0']},{args['penergy1']}" +
+           f",{args['peresol']},{args['ibeam']},{args['xyresol']}" +
+           f",{args['xsigma']},{args['ysigma']},{args['xycorr']}" +
+           f",{args['xoffset']},{args['yoffset']},{args['phideg']}" +
+           f",{args['tiltrange']},{args['tiltresol']}")
+
+def unique_collimator_string(args):
+   """
+   Generates a unique string out of the contents of args
+   related to the photon beam at the entrance to the collimator.
+   """
+   return (f"{args['thetah']},{args['thetav']}" +
+           f",{args['vspotrms']},{args['emittance']},{args['ebeamrms']}" +
+           f",{args['radthick']},{args['coldiam']},{args['coldist']}")
+
 def make_beamtilt(args):
    """
    Creates a 2D histogram of the horizontal and vertical tilt angles of
@@ -67,14 +88,11 @@ def make_beamtilt(args):
    the center of the crystal, with rms sizes xsigma,ysigma and correlation
    coefficient xycorr.
    """
-   hfile = (f"tiltspot_{args['radname']},{args['iradview']}" +
-            f",{args['xoffset']},{args['yoffset']},{args['phideg']}" +
-            f",{args['xsigma']},{args['ysigma']},{args['xycorr']}" +
-            f",{args['tiltrange']},{args['tiltresol']}.root")
-   hfile = f"{docroot}{tmpdir}/{hfile}"
+   hfile = "tiltspot_" + unique_radiator_string(args) + ".root"
+   hpath = f"{docroot}{tmpdir}/{hfile}"
    try:
       hlist = ROOT.TObjArray()
-      f = ROOT.TFile(hfile)
+      f = ROOT.TFile(hpath)
       for h in ("tiltspot", "beamspot4topo", "topo4beamspot", "topo4beamspot2"):
          h2 = f.Get(h)
          h2.SetDirectory(0)
@@ -84,7 +102,7 @@ def make_beamtilt(args):
                             args['xoffset'], args['yoffset'], args['phideg'],
                             args['xsigma'], args['ysigma'], args['xycorr'],
                             args['tiltresol'], args['tiltrange'], args['tiltrange'])
-      f = ROOT.TFile(hfile, "create")
+      f = ROOT.TFile(hpath, "create")
       hlist.Write()
       f.Close()
    return hlist
@@ -97,16 +115,12 @@ def make_cobrems_intensity(args, nsamples=100):
       [0] coherent intensity, either polarization
       [1] incoherent intensity
    """
-   hfile = (f"intensity_{args['radname']},{args['iradview']}" +
-            f",{args['ebeam']},{args['ibeam']},{args['xyresol']}" +
-            f",{args['thetah']},{args['thetav']}" +
-            f",{args['xoffset']},{args['yoffset']},{args['phideg']}" +
-            f",{args['xsigma']},{args['ysigma']},{args['xycorr']}" +
-            f",{args['peresol']},{args['penergy0']},{args['penergy1']}.root")
-   hfile = f"{docroot}{tmpdir}/{hfile}"
+   hfile = ("intensity_" + unique_radiator_string(args) +
+            "_" + unique_collimator_string(args) + ".root")
+   hpath = f"{docroot}{tmpdir}/{hfile}"
    try:
       hlist = ROOT.TObjArray()
-      f = ROOT.TFile(hfile)
+      f = ROOT.TFile(hpath)
       for h in ("cobrems_intensity", "amorph_intensity"):
          h2 = f.Get(h)
          h2.SetDirectory(0)
@@ -120,7 +134,7 @@ def make_cobrems_intensity(args, nsamples=100):
 
       hlist.Add(hamor[0])
       hlist.Add(htilt[0])
-      f = ROOT.TFile(hfile, "create")
+      f = ROOT.TFile(hpath, "create")
       hlist.Write()
       f.Close()
    return hlist
@@ -134,16 +148,12 @@ def make_cobrems_polarintensity(args, nsamples=100):
       [1] coherent intensity, either polarization
       [2] incoherent intensity
    """
-   hfile = (f"polarintensity_{args['radname']},{args['iradview']}" +
-            f",{args['ebeam']},{args['ibeam']},{args['xyresol']}" +
-            f",{args['thetah']},{args['thetav']}" +
-            f",{args['xoffset']},{args['yoffset']},{args['phideg']}" +
-            f",{args['xsigma']},{args['ysigma']},{args['xycorr']}" +
-            f",{args['peresol']},{args['penergy0']},{args['penergy1']}.root")
-   hfile = f"{docroot}{tmpdir}/{hfile}"
+   hfile = ("intensity_" + unique_radiator_string(args) +
+            "_" + unique_collimator_string(args) + ".root")
+   hpath = f"{docroot}{tmpdir}/{hfile}"
    try:
       hlist = ROOT.TObjArray()
-      f = ROOT.TFile(hfile)
+      f = ROOT.TFile(hpath)
       for h in ("polar_intensity", "cobrems_intensity", "amorph_intensity"):
          h2 = f.Get(h)
          h2.SetDirectory(0)
@@ -157,7 +167,7 @@ def make_cobrems_polarintensity(args, nsamples=100):
 
       hlist.Add(hamor[0])
       hlist.Add(htilt[0])
-      f = ROOT.TFile(hfile, "create")
+      f = ROOT.TFile(hpath, "create")
       hlist.Write()
       f.Close()
    return hlist
@@ -330,10 +340,7 @@ def snap_crystal_orientation(args):
    return status,output
 
 def plot_beamspot_on_topograph(args, size_px=600):
-   imgf = (f"topospot_{args['radname']},{args['iradview']}" +
-           f",{args['xoffset']},{args['yoffset']},{args['phideg']}" +
-           f",{args['xsigma']},{args['ysigma']},{args['xycorr']}" +
-           f",{args['tiltrange']},{args['tiltresol']}.png")
+   imgf = "topospot_" + unique_radiator_string(args) + ".png"
    imgpath = f"{docroot}{tmpdir}/{imgf}"
    if not os.path.exists(imgpath):
       hlist = make_beamtilt(args)
@@ -348,10 +355,7 @@ def plot_beamspot_on_topograph(args, size_px=600):
    return status,output
 
 def plot_tilt_intensity_map(args, size_px=600):
-   imgf = (f"tiltspot_{args['radname']},{args['iradview']}" +
-           f",{args['xoffset']},{args['yoffset']},{args['phideg']}" +
-           f",{args['xsigma']},{args['ysigma']},{args['xycorr']}" +
-           f",{args['tiltrange']},{args['tiltresol']}.png")
+   imgf = "tiltspot_" + unique_radiator_string(args) + ".png"
    imgpath = f"{docroot}{tmpdir}/{imgf}"
    if not os.path.exists(imgpath):
       hlist = make_beamtilt(args)
@@ -366,12 +370,8 @@ def plot_tilt_intensity_map(args, size_px=600):
    return status,output
 
 def plot_cobrems_intensity_spectrum(args, size_px=600):
-   imgf = (f"intensity_{args['radname']},{args['iradview']}" +
-           f",{args['ebeam']},{args['ibeam']},{args['xyresol']}" +
-           f",{args['thetah']},{args['thetav']}" +
-           f",{args['xoffset']},{args['yoffset']},{args['phideg']}" +
-           f",{args['xsigma']},{args['ysigma']},{args['xycorr']}" +
-           f",{args['peresol']},{args['penergy0']},{args['penergy1']}.png")
+   imgf = ("intensity_" + unique_radiator_string(args) +
+           "_" + unique_collimator_string(args) + ".png")
    imgpath = f"{docroot}{tmpdir}/{imgf}"
    if not os.path.exists(imgpath):
       hlist = make_cobrems_intensity(args)
@@ -397,12 +397,8 @@ def plot_cobrems_intensity_spectrum(args, size_px=600):
    return status,output
 
 def plot_cobrems_enhancement_spectrum(args, size_px=600):
-   imgf = (f"enhancement_{args['radname']},{args['iradview']}" +
-           f",{args['ebeam']},{args['ibeam']},{args['xyresol']}" +
-           f",{args['thetah']},{args['thetav']}" +
-           f",{args['xoffset']},{args['yoffset']},{args['phideg']}" +
-           f",{args['xsigma']},{args['ysigma']},{args['xycorr']}" +
-           f",{args['peresol']},{args['penergy0']},{args['penergy1']}.png")
+   imgf = ("enhancement_" + unique_radiator_string(args) +
+           "_" + unique_collimator_string(args) + ".png")
    imgpath = f"{docroot}{tmpdir}/{imgf}"
    if not os.path.exists(imgpath):
       hlist = make_cobrems_intensity(args)
@@ -429,12 +425,8 @@ def plot_cobrems_enhancement_spectrum(args, size_px=600):
    return status,output
 
 def plot_cobrems_polarization_spectrum(args, size_px=600):
-   imgf = (f"polarintensity_{args['radname']},{args['iradview']}" +
-           f",{args['ebeam']},{args['ibeam']},{args['xyresol']}" +
-           f",{args['thetah']},{args['thetav']}" +
-           f",{args['xoffset']},{args['yoffset']},{args['phideg']}" +
-           f",{args['xsigma']},{args['ysigma']},{args['xycorr']}" +
-           f",{args['peresol']},{args['penergy0']},{args['penergy1']}.png")
+   imgf = ("polarintensity_" + unique_radiator_string(args) +
+           "_" + unique_collimator_string(args) + ".png")
    imgpath = f"{docroot}{tmpdir}/{imgf}"
    if not os.path.exists(imgpath):
       hlist = make_cobrems_polarintensity(args)
@@ -484,6 +476,12 @@ def process_request(env, pars):
    args["snapact"] = get_form_var("snap_action", pars, dtype=str, default="off", err=logmsg)
    args["snapedge"] = get_form_var("snap_edge", pars, dtype=float, default=6.0, unit="GeV", err=logmsg)
    args["tiltrange"] = get_form_var("rad_tilt_range", pars, dtype=float, default=1, unit="mr", err=logmsg)
+   args["vspotrms"] = get_form_var("vspot_rms", pars, dtype=float, default=0.5, unit="mm", err=logmsg)
+   args["radthick"] = get_form_var("rad_thickness", pars, dtype=float, default=50, unit="microns", err=logmsg)
+   args["emittance"] = get_form_var("ebeam_emittance", pars, dtype=float, default=4.2e-9, unit="m.radians", err=logmsg)
+   args["ebeamrms"] = get_form_var("ebeam_rms", pars, dtype=float, default=0.001, unit="GeV", err=logmsg)
+   args["coldiam"] = get_form_var("collimator_diameter", pars, dtype=float, default=3.4, unit="mm", err=logmsg)
+   args["coldist"] = get_form_var("collimator_distance", pars, dtype=float, default=76, unit="m", err=logmsg)
    args["tiltresol"] = get_form_var("rad_tilt_resol", pars, dtype=float, default=0.01, unit="mr", err=logmsg)
    args["toplot"] = get_form_var("plot_type", pars, dtype=str, default="tilt", err=logmsg)
    spot_plot_options = 'checked="checked"' if args["toplot"] == "spot" else ""
@@ -542,6 +540,38 @@ def process_request(env, pars):
 .slider {{
   width: 100%;
 }}
+.collimation-form-modal {{
+  display: none;
+  background-color: white;
+  width: 500px;
+  height:350px;
+  top: 20%;
+  left: 15%;
+  position: absolute;
+  z-index: 3;
+}}
+.collimation-form-overlay {{
+  position: fixed;
+  display: none;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.5);
+  z-index: 2;
+  cursor: pointer;
+}}
+.collimation-form-close {{
+  position: relative;
+  float: right;
+  margin: 10px;
+  font-size: 40px;
+}}
+.collimation-form-close:hover {{
+  cursor: pointer;
+}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.3.2/math.js"></script>
 </head>
@@ -584,6 +614,41 @@ Richard Jones, University of Connecticut, June 2022
    <img class="canvas-frame" src="{img}" alt="beam spot image at radiator"/>
    <img class="canvas-overlay" src="{tmpdir}/{args['radname'] + radiator_views[args['radview']]}"
         id="radiator_image" style="transform: translate(120px,180px);" alt="radiator topographic image"/>
+  </div>
+  <div style="text-align: center; vertical-align: bottom;">
+   <a href="#" class="collimation-form-open">Check / modify parameters related to photon beam collimation</a>
+   <div class="collimation-form-overlay"></div>
+   <div class="collimation-form-modal">
+    <span class="collimation-form-close">&times;</span>
+    <h2>Check / modify parameters related to photon beam collimation</h2>
+    <table align="center"><tr>
+      <td style="text-align: left;">virtual spot rms size at collimator:</td>
+      <td><input style="float: right;" type="text" name="vspot_rms" value="{args['vspotrms']}" size="3"></td>
+      <td style="text-align: left;">(mm)</td>
+    </tr></tr>
+      <td style="text-align: left;">diamond radiator thickness:</td>
+      <td><input style="float: right;" type="text" name="rad_thickness" value="{args['radthick']}" size="3"></td>
+      <td style="text-align: left;">(microns)</td>
+    </tr></tr>
+      <td style="text-align: left;">electron beam transverse emittance:</td>
+      <td><input style="float: right;" type="text" name="ebeam_emittance" value="{args['emittance']}" size="3"></td>
+      <td style="text-align: left;">(m.radians)</td>
+    </tr></tr>
+      <td style="text-align: left;">electron beam energy width:</td>
+      <td><input style="float: right;" type="text" name="ebeam_rms" value="{args['ebeamrms']}" size="3"></td>
+      <td style="text-align: left;">(GeV)</td>
+    </tr></tr>
+      <td style="text-align: left;">collimator diameter:</td>
+      <td><input style="float: right;" type="text" name="collimator_diameter" value="{args['coldiam']}" size="3"></td>
+      <td style="text-align: left;">(mm)</td>
+    </tr></tr>
+      <td style="text-align: left;">radiator-collimator distance:</td>
+      <td><input style="float: right;" type="text" name="collimator_distance" value="{args['coldist']}" size="3"></td>
+      <td style="text-align: left;">(m)</td>
+    </tr></tr>
+      <td></td><td><input style="margin: 20px;" type="submit" value="Update"></td>
+    </tr></table>
+   </div>
   </div>
  </td>
  <td style="vertical-align: top;">
@@ -927,6 +992,34 @@ function execute_snap() {{
   }}
   xhttp.open("GET", httpRequest, true);
   xhttp.send();
+}}
+var lightboxOpenButtons = document.getElementsByClassName("collimation-form-open");
+var lightboxCloseButtons = document.getElementsByClassName("collimation-form-close");
+var lightboxModals = document.getElementsByClassName("collimation-form-modal");
+var lightboxOverlays = document.getElementsByClassName("collimation-form-overlay");
+for (let i = 0; i < lightboxOpenButtons.length; i++) {{
+  lightboxOpenButtons[i].addEventListener('click',
+    function() {{
+      lightboxModals[i].style.display = 'block';    
+      lightboxOverlays[i].style.display = 'block';
+    }}
+  )
+}}
+for (let i = 0; i < lightboxCloseButtons.length; i++) {{
+  lightboxCloseButtons[i].addEventListener("click",
+    function() {{
+      lightboxModals[i].style.display = 'none';
+      lightboxOverlays[i].style.display = 'none';
+    }}
+  )
+}}
+for (let i = 0; i < lightboxOverlays.length; i++) {{
+  lightboxOverlays[i].addEventListener("click",
+    function() {{
+      lightboxModals[i].style.display = 'none';
+      lightboxOverlays[i].style.display = 'none';
+    }}
+  )
 }}
 </script>
 </body>
