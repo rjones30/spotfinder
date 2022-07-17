@@ -1,7 +1,7 @@
 //
-// visuals.C - ROOT macro to create visuals for the animation of
-//             the diamond and electron beam spot needed by the
-//             spotfinder web app.
+// rootvisuals.C - ROOT macro to create visuals for the animation of
+//                 the diamond and electron beam spot needed by the
+//                 spotfinder web app.
 //
 // author: richard.t.jones at uconn.edu
 // version: june 4, 2022
@@ -21,9 +21,21 @@
 
 #include <CobremsGeneration.hh>
 
-TString resultsdir("/var/www/html/tools/spotfinder/tmp");
+TString resultsdir("/home/rtj02001/spotfinder/tmp");
 
+// These defaults can be changed from the spotfinder web tool
 CobremsGeneration cobrems(12.0, 9.0);
+struct CobremsInitializer {
+   CobremsInitializer() {
+      cobrems.setBeamErms(0.001);
+      cobrems.setBeamEmittance(4.2e-9);
+      cobrems.setCollimatorSpotrms(0.5e-3);
+      cobrems.setCollimatorDistance(76.);
+      cobrems.setCollimatorDiameter(3.4e-3);
+      cobrems.setTargetCrystal("diamond");
+      cobrems.setTargetThickness(50.e-6);
+   }
+} cobrems_init;
 
 TObjArray *beamspot(double xsigma, double ysigma, double xycorr,
                     double resol=0.01, double width=20, double height=20)
@@ -278,13 +290,6 @@ TObjArray *cobrems_intensity(const char* radiator_name, int radiator_view,
 
    // configure the coherent bremsstrahlung calculator
    cobrems.setBeamEnergy(ebeam);
-   cobrems.setBeamErms(0.001);
-   cobrems.setBeamEmittance(4.2e-9);
-   cobrems.setCollimatorSpotrms(0.5e-3);
-   cobrems.setCollimatorDistance(76.);
-   cobrems.setCollimatorDiameter(3.4e-3);
-   cobrems.setTargetThickness(50.e-6);
-   cobrems.setTargetCrystal("diamond");
    cobrems.setTargetOrientation(thetah * 1e-3, thetav * 1e-3, 0);
    cobrems.setPhotonEnergyMin(emin / 10.);
    cobrems.setCollimatedFlag(1);
@@ -349,13 +354,6 @@ TObjArray *amorph_intensity(double ebeam, double ibeam,
 
    // configure the coherent bremsstrahlung calculator
    cobrems.setBeamEnergy(ebeam);
-   cobrems.setBeamErms(0.001);
-   cobrems.setBeamEmittance(4.2e-9);
-   cobrems.setCollimatorSpotrms(0.5e-3);
-   cobrems.setCollimatorDistance(76.);
-   cobrems.setCollimatorDiameter(3.4e-3);
-   cobrems.setTargetThickness(50.e-6);
-   cobrems.setTargetCrystal("diamond");
    cobrems.setTargetOrientation(175, 250, 0);
    cobrems.setPhotonEnergyMin(emin / 10.);
    cobrems.setCollimatedFlag(1);
