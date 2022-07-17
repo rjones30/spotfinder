@@ -475,13 +475,13 @@ def process_request(env, pars):
    args["thetav"] = get_form_var("rad_thetav", pars, dtype=float, default=0, unit="mr", err=logmsg)
    args["snapact"] = get_form_var("snap_action", pars, dtype=str, default="off", err=logmsg)
    args["snapedge"] = get_form_var("snap_edge", pars, dtype=float, default=6.0, unit="GeV", err=logmsg)
-   args["tiltrange"] = get_form_var("rad_tilt_range", pars, dtype=float, default=1, unit="mr", err=logmsg)
    args["vspotrms"] = get_form_var("vspot_rms", pars, dtype=float, default=0.5, unit="mm", err=logmsg)
    args["radthick"] = get_form_var("rad_thickness", pars, dtype=float, default=50, unit="microns", err=logmsg)
    args["emittance"] = get_form_var("ebeam_emittance", pars, dtype=float, default=4.2e-9, unit="m.radians", err=logmsg)
    args["ebeamrms"] = get_form_var("ebeam_rms", pars, dtype=float, default=0.001, unit="GeV", err=logmsg)
    args["coldiam"] = get_form_var("collimator_diameter", pars, dtype=float, default=3.4, unit="mm", err=logmsg)
    args["coldist"] = get_form_var("collimator_distance", pars, dtype=float, default=76, unit="m", err=logmsg)
+   args["tiltrange"] = get_form_var("rad_tilt_range", pars, dtype=float, default=1, unit="mr", err=logmsg)
    args["tiltresol"] = get_form_var("rad_tilt_resol", pars, dtype=float, default=0.01, unit="mr", err=logmsg)
    args["toplot"] = get_form_var("plot_type", pars, dtype=str, default="tilt", err=logmsg)
    spot_plot_options = 'checked="checked"' if args["toplot"] == "spot" else ""
@@ -489,6 +489,13 @@ def process_request(env, pars):
    intense_plot_options = 'checked="checked"' if args["toplot"] == "intense" else ""
    enhance_plot_options = 'checked="checked"' if args["toplot"] == "enhance" else ""
    polar_plot_options = 'checked="checked"' if args["toplot"] == "polar" else ""
+   ROOT.cobrems.setBeamErms(args["ebeamrms"])
+   ROOT.cobrems.setBeamEmittance(args["emittance"])
+   ROOT.cobrems.setCollimatorSpotrms(args["vspotrms"] * 1e-3)
+   ROOT.cobrems.setCollimatorDistance(args["coldist"])
+   ROOT.cobrems.setCollimatorDiameter(args["coldiam"] * 1e-3)
+   ROOT.cobrems.setTargetThickness(args["radthick"] * 1e-6)
+   ROOT.cobrems.setTargetCrystal("diamond")
    args["niter"] = get_form_var("iteration", pars, int, 0, logmsg)
    if args["snapact"] != "off":
       return snap_crystal_orientation(args)
@@ -623,27 +630,27 @@ Richard Jones, University of Connecticut, June 2022
     <h2>Check / modify parameters related to photon beam collimation</h2>
     <table align="center"><tr>
       <td style="text-align: left;">virtual spot rms size at collimator:</td>
-      <td><input style="float: right;" type="text" name="vspot_rms" value="{args['vspotrms']}" size="3"></td>
+      <td><input style="float: right;" type="text" id="vspot_rms" name="vspot_rms" value="{args['vspotrms']}" size="3"></td>
       <td style="text-align: left;">(mm)</td>
     </tr></tr>
       <td style="text-align: left;">diamond radiator thickness:</td>
-      <td><input style="float: right;" type="text" name="rad_thickness" value="{args['radthick']}" size="3"></td>
+      <td><input style="float: right;" type="text" id="rad_thickness" name="rad_thickness" value="{args['radthick']}" size="3"></td>
       <td style="text-align: left;">(microns)</td>
     </tr></tr>
       <td style="text-align: left;">electron beam transverse emittance:</td>
-      <td><input style="float: right;" type="text" name="ebeam_emittance" value="{args['emittance']}" size="3"></td>
+      <td><input style="float: right;" type="text" id="ebeam_emittance" name="ebeam_emittance" value="{args['emittance']}" size="3"></td>
       <td style="text-align: left;">(m.radians)</td>
     </tr></tr>
       <td style="text-align: left;">electron beam energy width:</td>
-      <td><input style="float: right;" type="text" name="ebeam_rms" value="{args['ebeamrms']}" size="3"></td>
+      <td><input style="float: right;" type="text" id="ebeam_rms" name="ebeam_rms" value="{args['ebeamrms']}" size="3"></td>
       <td style="text-align: left;">(GeV)</td>
     </tr></tr>
       <td style="text-align: left;">collimator diameter:</td>
-      <td><input style="float: right;" type="text" name="collimator_diameter" value="{args['coldiam']}" size="3"></td>
+      <td><input style="float: right;" type="text" id="collimator_diameter" name="collimator_diameter" value="{args['coldiam']}" size="3"></td>
       <td style="text-align: left;">(mm)</td>
     </tr></tr>
       <td style="text-align: left;">radiator-collimator distance:</td>
-      <td><input style="float: right;" type="text" name="collimator_distance" value="{args['coldist']}" size="3"></td>
+      <td><input style="float: right;" type="text" id="collimator_distance" name="collimator_distance" value="{args['coldist']}" size="3"></td>
       <td style="text-align: left;">(m)</td>
     </tr></tr>
       <td></td><td><input style="margin: 20px;" type="submit" value="Update"></td>
@@ -720,7 +727,12 @@ Richard Jones, University of Connecticut, June 2022
      <input type="range" min="-10" max="10" step="0.01" name="rad_thetavs" value="{args['thetav']}" class="slider" id="rad_thetav-slider" oninput="sliderInputHandler('rad_thetav')">
     </div></td>
    </tr><tr>
-    <td style="text-align: left;"><label for="snap_edge">snap primary edge to</label>
+    <td style="text-align: left;">
+    <label for="rad_tilt_range">radiator tilt range</label>
+    <input type="hidden" id="rad_tilt_range" name="rad_tilt_range" value="{args['tiltrange']}">
+    <label for="rad_tilt_resol">radiator tilt resolution</label>
+    <input type="hidden" id="rad_tilt_resol" name="rad_tilt_resol" value="{args['tiltresol']}">
+    <label for="snap_edge">snap primary edge to</label>
     <input type="button" value="Para" onclick="snap_para()">
     <input type="button" value="Perp" onclick="snap_perp()"> at:
     <input type="hidden" id="snap_action" name="snap_action" value="off">
@@ -818,6 +830,14 @@ function refreshSpectrumPlots() {{
   var thetav = document.getElementById("rad_thetav").value;
   var snapact = document.getElementById("snap_action").value;
   var snapedge = document.getElementById("snap_edge").value;
+  var tiltresol = document.getElementById("rad_tilt_resol").value;
+  var tiltrange = document.getElementById("rad_tilt_range").value;
+  var vspotrms = document.getElementById("vspot_rms").value;
+  var radthick = document.getElementById("rad_thickness").value;
+  var emittance = document.getElementById("ebeam_emittance").value;
+  var ebeamrms = document.getElementById("ebeam_rms").value;
+  var coldiam = document.getElementById("collimator_diameter").value;
+  var coldist = document.getElementById("collimator_distance").value;
   var toplot = "undefined";
   var elist = document.getElementsByTagName("input");
   for (i = 0; i < elist.length; i++) {{
@@ -851,6 +871,14 @@ function refreshSpectrumPlots() {{
   httpRequest += `&rad_thetav=${{thetav}}`;
   httpRequest += `&snap_action=${{snapact}}`;
   httpRequest += `&snap_edge=${{snapedge}}`;
+  httpRequest += `&rad_tilt_range=${{tiltrange}}`;
+  httpRequest += `&rad_tilt_resol=${{tiltresol}}`;
+  httpRequest += `&vspot_rms=${{vspotrms}}`;
+  httpRequest += `&rad_thickness=${{radthick}}`;
+  httpRequest += `&ebeam_emittance=${{emittance}}`;
+  httpRequest += `&ebeam_rms=${{ebeamrms}}`;
+  httpRequest += `&collimator_diameter=${{coldiam}}`;
+  httpRequest += `&collimator_distance=${{coldist}}`;
   httpRequest += `&plot_type=${{toplot}}`;
   httpRequest += `&iteration=${{niter}}`;
   elmnt.setAttribute("iteration", niter.toString());
@@ -925,6 +953,7 @@ function execute_snap() {{
   var rname = document.getElementById("radiator_name").value;
   var rview = document.getElementById("radiator_view").value;
   var benergy = document.getElementById("ebeam_energy").value;
+  var bcurrent = document.getElementById("ebeam_current").value;
   var bxsigma = document.getElementById("ebeam_xsigma").value;
   var bysigma = document.getElementById("ebeam_ysigma").value;
   var bxycorr = document.getElementById("ebeam_xycorr").value;
@@ -939,6 +968,14 @@ function execute_snap() {{
   var thetav = document.getElementById("rad_thetav").value;
   var snapact = document.getElementById("snap_action").value;
   var snapedge = document.getElementById("snap_edge").value;
+  var tiltrange = document.getElementById("rad_tilt_range").value;
+  var tiltresol = document.getElementById("rad_tilt_resol").value;
+  var vspotrms = document.getElementById("vspot_rms").value;
+  var radthick = document.getElementById("rad_thickness").value;
+  var emittance = document.getElementById("ebeam_emittance").value;
+  var ebeamrms = document.getElementById("ebeam_rms").value;
+  var coldiam = document.getElementById("collimator_diameter").value;
+  var coldist = document.getElementById("collimator_distance").value;
   var toplot = "undefined";
   var elist = document.getElementsByTagName("input");
   for (i = 0; i < elist.length; i++) {{
@@ -950,6 +987,7 @@ function execute_snap() {{
   httpRequest += `?radiator_name=${{rname}}`;
   httpRequest += `&radiator_view=${{rview}}`;
   httpRequest += `&ebeam_energy=${{benergy}}`;
+  httpRequest += `&ebeam_current=${{bcurrent}}`;
   httpRequest += `&ebeam_xsigma=${{bxsigma}}`;
   httpRequest += `&ebeam_ysigma=${{bysigma}}`;
   httpRequest += `&ebeam_xycorr=${{bxycorr}}`;
@@ -964,6 +1002,14 @@ function execute_snap() {{
   httpRequest += `&rad_thetav=${{thetav}}`;
   httpRequest += `&snap_action=${{snapact}}`;
   httpRequest += `&snap_edge=${{snapedge}}`;
+  httpRequest += `&rad_tilt_range=${{tiltrange}}`;
+  httpRequest += `&rad_tilt_resol=${{tiltresol}}`;
+  httpRequest += `&vspot_rms=${{vspotrms}}`;
+  httpRequest += `&rad_thickness=${{radthick}}`;
+  httpRequest += `&ebeam_emittance=${{emittance}}`;
+  httpRequest += `&ebeam_rms=${{ebeamrms}}`;
+  httpRequest += `&collimator_diameter=${{coldiam}}`;
+  httpRequest += `&collimator_distance=${{coldist}}`;
   httpRequest += `&plot_type=${{toplot}}`;
   var xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function() {{
