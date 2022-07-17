@@ -85,6 +85,12 @@ def test_intensity_hist(nsamples=200, nsplit=1, batchsize=200, args={}):
    args['peresol'] = 0.02
    args['penergy0'] = 4.5
    args['penergy1'] = 7.0
+   args["ebeamrms"] = 0.001
+   args["emittance"] = 4.2e-9
+   args["vspotrms"] = 0.5e-3
+   args["coldist"] = 76
+   args["coldiam"] = 3.4e-3
+   args["radthick"] = 50e-6
    thetah_ref = float(args['thetah'])
    thetav_ref = float(args['thetav'])
    thetah_mr = np.array([0], dtype=float)
