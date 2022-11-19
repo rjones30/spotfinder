@@ -202,7 +202,7 @@ address in cobrems_worker.py:
 
 ```
 app = Celery("cobrems_worker", backend="rpc://",
-             broker="amqp://guest@my-rabbitmq-server//")
+             broker="amqp://<user>:<passwd>@my-rabbitmq-server/[vhost]/")
 ```
 
 The backend="rpc://" should be left unchanged, but the broker string should be changed from my-rabbitmq-server to the name of the server where the local

@@ -19,13 +19,13 @@ import ROOT
 ROOT.gSystem.AddDynamicPath(os.environ['COBREMS_WORKER'])
 ROOT.gSystem.AddDynamicPath("/usr/lib64")
 ROOT.gSystem.Load("libboost_python3.so")
-#ROOT.gSystem.Load("CobremsGeneration_cc.so")
+ROOT.gSystem.Load("CobremsGeneration_cc.so")
 ROOT.gSystem.Load("rootvisuals_C.so")
 
 from celery import Celery
 
 app = Celery("cobrems_worker", backend="rpc://",
-             broker=f"amqp://guest@{os.environ['RABBITMQ_SERVER']}//")
+        broker=f"amqp://{os.environ['RABBITMQ_USER']:@{os.environ['RABBITMQ_SERVER']}/{os.environ['RABBITMQ_VHOST']}/")
 app.conf.update(result_expires=1200)
 
 @app.task

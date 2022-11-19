@@ -21,7 +21,7 @@
 
 #include <CobremsGeneration.hh>
 
-TString resultsdir("/home/rtj02001/spotfinder/tmp");
+TString resultsdir("/var/www/html/tools/spotfinder/tmp");
 
 // These defaults can be changed from the spotfinder web tool
 CobremsGeneration cobrems(12.0, 9.0);
