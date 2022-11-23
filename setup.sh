@@ -1,11 +1,12 @@
 export USER=$(whoami)
 export COBREMS_WORKER=/home/$USER/spotfinder
-export PATH=$PATH:/usr/local/bin:/cvmfs/oasis.opensciencegrid.org/gluex/root-6.22.06/x86_64/bin
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/cvmfs/oasis.opensciencegrid.org/gluex/root-6.22.06/x86_64/lib
-export PYTHONPATH=$PYTHONPATH:/cvmfs/oasis.opensciencegrid.org/gluex/root-6.22.06/x86_64/lib
+export ROOTSYS=/home/osgusers/root-6.27.01/x86_64
+export PATH=$PATH:/usr/local/bin:$ROOTSYS/bin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$ROOTSYS/lib
+export PYTHONPATH=$PYTHONPATH:$ROOTSYS/lib
 export RABBITMQ_SERVER=cn410.storrs.hpc.uconn.edu
 export RABBITMQ_USER=spotfinder:FEA098B2D91AC7F723AE810
-export RABBITMQ_VHOST=spotfind
+export RABBITMQ_VHOST=/spotfind
 
 # start firewall services
 #systemctl enable firewalld
