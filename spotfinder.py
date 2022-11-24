@@ -444,7 +444,7 @@ def plot_cobrems_polarization_spectrum(args, size_px=600):
       hpol.GetYaxis().SetTitle("linear polarization")
       hpol.SetTitle(f"peak = {hmax:.3e}, average = {hsum/(i1-i0+1):.3e}")
       g = ROOT.draw_cobrems_spectrum(hpol, size_px, imgpath)
-   hfile = imgf[:-4] + ".root"
+   hfile = imgf[5:-4] + ".root"
    output = [f"""
     <img src="{tmpdir}/{imgf}">
     Iteration number {args['niter']} for
@@ -667,7 +667,9 @@ Richard Jones, University of Connecticut, June 2022
     <input style="float: right;" type="submit" value="Update">
    </td>
    </tr><tr>
-    <td style="text-align: left;"><label for="ebeam_energy">electron beam energy:</label></td>
+    <td style="text-align: left;"><label for="ebeam_current"></label>
+    <input type="hidden" id="ebeam_current" name="ebeam_current" value="{args['ibeam']}" size="3">
+    <label for="ebeam_energy">electron beam energy:</label></td>
     <td><input type="text" id="ebeam_energy" name="ebeam_energy" value="{args['ebeam']}" size="3">
     </td><td>(GeV)</td>
    <tr>
