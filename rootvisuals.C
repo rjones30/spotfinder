@@ -17,9 +17,9 @@
 #include <TStyle.h>
 #include <TString.h>
 #include <TExec.h>
-#include <Couples.h>
 
-#include <CobremsGeneration.hh>
+#include "Couples.h"
+#include "CobremsGeneration.hh"
 
 TString resultsdir("/var/www/html/tools/spotfinder/tmp");
 
