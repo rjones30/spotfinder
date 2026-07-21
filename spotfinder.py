@@ -29,6 +29,8 @@ import time
 docroot = "/var/www/html"
 topdir = "/tools/spotfinder"
 tmpdir = "/tools/spotfinder/tmp"
+
+# dummy initialization, self_script is now discovered during processing of queries
 self_script = "https://my-apache-server/spotfinder"
 
 sys.path.append(f"{docroot}{topdir}")
@@ -290,7 +292,8 @@ def fill_cobrems_polarintensity(args, nsamples, htilt, nsplit=1, batchsize=500):
                else:
                   htot[p] = h
             elif retries > 50:
-               proc.forget()
+               pass
+               #proc.forget()
             else:
                pending.append(proc)
          procs = pending
@@ -1084,6 +1087,8 @@ def application(environ, start_response):
    the header that leads the output to be sent back to the
    client.
    """
+   global self_script
+   self_script = "https://" + environ["HTTP_HOST"] + "/spotfinder"
    env = environ
    pars = urlparse.parse_qs(environ["QUERY_STRING"], keep_blank_values=True)
    status,output = process_request(env, pars)
