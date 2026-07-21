@@ -118,6 +118,30 @@ TObjArray *tiltspot(const char* radiator_name, int radiator_view,
       return 0;
    TFile fcouples((resultsdir + "/" + radiator_name + "_couples.root").Data());
    Couples *coup = (Couples*)gROOT->FindObject("coup");
+   if (coup == 0) {
+      /*
+      FILE *dbgf = fopen("/tmp/tiltspot_debug.log", "a");
+      if (dbgf) {
+         fprintf(dbgf, "opened file=%s gDirectory=%s gFile=%s\n",
+                 fcouples.GetName(),
+                 gDirectory ? gDirectory->GetName() : "NULL",
+                 gFile ? gFile->GetName() : "NULL");
+         fclose(dbgf);
+      }
+      */
+      coup = (Couples*)fcouples.Get("coup");
+   }
+   if (coup == 0) {
+      /*
+      FILE *dbgf = fopen("/tmp/tiltspot_debug.log", "a");
+      if (dbgf) {
+         fprintf(dbgf, "gROOT->FindObject(\"coup\") NULL for radiator_name=%s, "
+                 "falling back to fcouples.Get(\"coup\")\n", radiator_name);
+         fclose(dbgf);
+      }
+      */
+      return 0;
+   }
    TH2D *h2topo[2] = {coup->getmap(idx[radiator_view], "hmu_moco"),
                       coup->getmap(idy[radiator_view], "hmu_moco")};
    double xrange[2] = {h2topo[0]->GetXaxis()->GetXmin(),
