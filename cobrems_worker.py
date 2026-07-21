@@ -23,10 +23,16 @@ ROOT.gSystem.Load("CobremsGeneration_cc.so")
 ROOT.gSystem.Load("rootvisuals_C.so")
 
 from celery import Celery
+from kombu import Queue
 
-app = Celery("cobrems_worker", backend="rpc://",
+#app = Celery("cobrems_worker", backend="rpc://",
+#        broker=f"amqp://{os.environ['RABBITMQ_USER']}@{os.environ['RABBITMQ_SERVER']}/{os.environ['RABBITMQ_VHOST']}")
+app = Celery("cobrems_worker", backend=f"redis://{os.environ['REDIS_SERVER']}:6379/0",
         broker=f"amqp://{os.environ['RABBITMQ_USER']}@{os.environ['RABBITMQ_SERVER']}/{os.environ['RABBITMQ_VHOST']}")
-app.conf.update(result_expires=1200)
+app.conf.update(result_expires=1200,
+        task_queues=(Queue("celery", routing_key="celery", durable=True),),
+        task_default_queue="celery",
+        worker_enable_remote_control=False)
 
 @app.task
 def fill_random_hist(pid, nrand):
