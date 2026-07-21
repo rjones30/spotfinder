@@ -11,5 +11,5 @@ fi
 if ps -u $USER | grep -v grep | grep -q celery; then
     echo "already running"
 else
-    celery -A cobrems_worker worker -l INFO >$(pwd)/cobrems_worker_$(hostname).log 2>&1 & 
+    celery -A cobrems_worker worker -l INFO --without-gossip --without-mingle >$HOME/cobrems_worker_$(hostname).log 2>&1 & 
 fi
