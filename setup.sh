@@ -8,6 +8,7 @@ export RABBITMQ_SERVER=nod30.phys.uconn.edu
 export RABBITMQ_USER=spotfinder:FEA04D199530F7F723AE810
 export RABBITMQ_VHOST=/spotfind
 export REDIS_SERVER=nod30.phys.uconn.edu
+export REDIS_PASSWORD="PCFK0yvDanTh00b6UHLZDNAW79527qmWIYjjZfwKvyg="
 
 # start firewall services
 #systemctl enable firewalld
