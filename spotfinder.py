@@ -37,7 +37,8 @@ sys.path.append(f"{docroot}{topdir}")
 import cobrems_worker
 ROOT = cobrems_worker.ROOT
 
-radiator_names = ["JD70-103", "JD70-106", "JD70-107", "JD70-109"]
+radiator_names = ["JD70-103", "JD70-106", "JD70-107", "JD70-109",
+                  "JD80-211", "JD80-212", "JD80-213"]
 radiator_views = {"front": "_front_view.png", "back": "_back_view.png"}
 
 mElectron = 0.51099895e-3 # GeV/c^2
@@ -1149,7 +1150,24 @@ if not os.path.isdir(f"{docroot}/{tmpdir}"):
      "JD70-109_020_results.root",
      "JD70-109_030_results.root",
      "JD70-109_040_results.root",
-     "JD70-109_couples.root"]
+     "JD70-109_couples.root",
+     "JD80-211_011,012_results.root",
+     "JD80-211_021,020_results.root",
+     "JD80-211_030,031,011,012_results.root",
+     "JD80-211_041,040_results.root",
+     "JD80-211_couples.root",
+     "JD80-212_011,010,032,033_results.root",
+     "JD80-212_020,021,040,041_results.root",
+     "JD80-212_032,033,011,010_results.root",
+     "JD80-212_040,041_results.root"
+     "JD80-212_couples.root",
+     "JD80-213_011,010,032,031_results.root",
+     "JD80-213_021,020_results.root",
+     "JD80-213_032,031,011,010_results.root",
+     "JD80-213_041,042_results.root",
+     "JD80-213_couples.root",
+   ]
+
    for froot in results_to_cache:
       if not os.path.isfile(f"{docroot}{tmpdir}/{froot}"):
          shutil.copy(f"{docroot}{topdir}/results/{froot}", f"{docroot}{tmpdir}/{froot}")
