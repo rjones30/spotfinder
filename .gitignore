@@ -10,6 +10,7 @@ __pycache__/
 *.so
 *.pcm
 *.d
+*_ACLiC_dict*
 
 # Distribution / packaging
 .Python
