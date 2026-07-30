@@ -1151,20 +1151,8 @@ if not os.path.isdir(f"{docroot}/{tmpdir}"):
      "JD70-109_030_results.root",
      "JD70-109_040_results.root",
      "JD70-109_couples.root",
-     "JD80-211_011,012_results.root",
-     "JD80-211_021,020_results.root",
-     "JD80-211_030,031,011,012_results.root",
-     "JD80-211_041,040_results.root",
      "JD80-211_couples.root",
-     "JD80-212_011,010,032,033_results.root",
-     "JD80-212_020,021,040,041_results.root",
-     "JD80-212_032,033,011,010_results.root",
-     "JD80-212_040,041_results.root"
      "JD80-212_couples.root",
-     "JD80-213_011,010,032,031_results.root",
-     "JD80-213_021,020_results.root",
-     "JD80-213_032,031,011,010_results.root",
-     "JD80-213_041,042_results.root",
      "JD80-213_couples.root",
    ]
 
