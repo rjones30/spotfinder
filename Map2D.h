@@ -6,6 +6,7 @@
 
 #include <limits>
 #include <cmath>
+class TH1I;
 
 class Map2D : public TH2D {
  public:
@@ -32,7 +33,7 @@ class Map2D : public TH2D {
    virtual Map2D &Shift(Double_t dx=0, Double_t dy=0, Double_t dz=0);
    virtual Map2D &Center();
    virtual Map2D &Level();
-   virtual Map2D &Normalize();
+   virtual Map2D &Renormalize();
    virtual Map2D &Rotate(Double_t phi=0, Double_t theta=0,
                          Double_t psi=0, Int_t degrees=0);
    virtual Map2D &Tilt(Double_t dzdx, Double_t dzdy,
@@ -48,6 +49,9 @@ class Map2D : public TH2D {
    virtual Double_t Correlation(const Map2D *map, Double_t contrast=1) const;
    virtual Double_t TotalCurl(const Map2D *Vx, const Map2D *Vy,
                               Map2D **silhouette=0);
+   const TH1D *GetLoopCurl() const { return fLoopCurl; }
+   const TH1I *GetLoopPixI() const { return fLoopPixI; }
+   const TH1I *GetLoopPixJ() const { return fLoopPixJ; }
    virtual Map2D &GetSilhouette();
    virtual Double_t Curl(const Map2D *Vx, const Map2D *Vy);
    virtual Map2D &Uncurl(const Map2D *Vx, const Map2D *Vy, Int_t comp);
@@ -66,6 +70,9 @@ class Map2D : public TH2D {
    ClassDef(Map2D,0);
 
  protected:
+   TH1D *fLoopCurl = 0;   //! by-product of TotalCurl(), owned by *this
+   TH1I *fLoopPixI = 0;   //! by-product of TotalCurl(), owned by *this
+   TH1I *fLoopPixJ = 0;   //! by-product of TotalCurl(), owned by *this
    Map2D *rotateX(Double_t thetarad, Double_t y0, Double_t z0) const;
    Map2D *rotateY(Double_t thetarad, Double_t x0, Double_t z0) const;
    Map2D *rotateZ(Double_t phirad, Double_t x0, Double_t y0) const;

@@ -75,6 +75,7 @@ class Couples: public TNamed
    Map2D *getmask();
    Map2D *getclean(int p);
    Map2D *getmap(int p, const char *name=0);
+   void setmap(int p, const Map2D *map, const char *name);
    Double_t getchi(int p) const;
    void setchi(int p, double chi, int deg=0);
    Double_t getphi(int p) const;
@@ -115,7 +116,23 @@ class Couples: public TNamed
 
    static void select_palette(int pal);
 
-   ClassDef(Couples, 3);
+   const Map2D *GetMcurl() const { return fMcurl; }
+   const Map2D *GetGradX() const { return fGradX; }
+   const Map2D *GetGradY() const { return fGradY; }
+   const Map2D *GetSurface10() const { return fSurface10; }
+   const Map2D *GetSurface32() const { return fSurface32; }
+   const Map2D *GetContour10() const { return fContour10; }
+   const Map2D *GetContour32() const { return fContour32; }
+   const Map2D *GetSilhouette10() const { return fSilhouette10; }
+   const Map2D *GetSilhouette32() const { return fSilhouette32; }
+   const Map2D *GetDivergence10() const { return fDivergence10; }
+   const Map2D *GetDivergence32() const { return fDivergence32; }
+   const Map2D *GetDiff02() const { return fDiff02; }
+   const Map2D *GetDiff13() const { return fDiff13; }
+   const TH1D *GetDiff02p() const { return fDiff02p; }
+   const TH1D *GetDiff13p() const { return fDiff13p; }
+
+   ClassDef(Couples, 4);
 
  protected:
    TString fResultsPath[4];           // path to XXX_results.root
@@ -133,6 +150,22 @@ class Couples: public TNamed
    Map2D *fCleanMask[4];              // clean-up masks for raw images
    Map2D *fZeroMask;                  // zero mask for all images
    Map2D *fMap[4];                    // current maps 
+   Map2D *fOrigMap[4];                // pristine originals, pre-transform
+   Map2D *fMcurl = 0;                 //! by-product of uncurl(), owned by *this
+   Map2D *fGradX = 0;                 //! by-product of uncurl(), owned by *this
+   Map2D *fGradY = 0;                 //! by-product of uncurl(), owned by *this
+   Map2D *fSurface10 = 0;             //! by-product of surface(), owned by *this
+   Map2D *fSurface32 = 0;             //! by-product of surface(), owned by *this
+   Map2D *fContour10 = 0;             //! by-product of surface(), owned by *this
+   Map2D *fContour32 = 0;             //! by-product of surface(), owned by *this
+   Map2D *fSilhouette10 = 0;          //! by-product of surface(), owned by *this
+   Map2D *fSilhouette32 = 0;          //! by-product of surface(), owned by *this
+   Map2D *fDivergence10 = 0;          //! by-product of surface(), owned by *this
+   Map2D *fDivergence32 = 0;          //! by-product of surface(), owned by *this
+   Map2D *fDiff02 = 0;                //! by-product of drawdiff(), owned by *this
+   Map2D *fDiff13 = 0;                //! by-product of drawdiff(), owned by *this
+   TH1D *fDiff02p = 0;                //! by-product of drawdiff(), owned by *this
+   TH1D *fDiff13p = 0;                //! by-product of drawdiff(), owned by *this
 
    Double_t fXrange[2];               // x axis range low, high (mm)
    Double_t fYrange[2];               // y axis range low, high (mm)
@@ -148,6 +181,7 @@ class Couples: public TNamed
    TFile *open(const char *filename);
    TCanvas *select_canvas(int p);
    void polycropper(int p);
+   void regenmap(int p);
    void deletemap(int p) {
       if (fMap[p]) {
          delete fMap[p];
@@ -161,7 +195,7 @@ class Couples: public TNamed
    static void polypicker(int p);
    static Couples *fPicking;
    void remove_walk(Map2D *target, Map2D *hmu, double dydtheta);
-   void save(const char *name, TCanvas *canvas=0, const char *plotfile=0);
+   void save(const char *name, const TObject *obj, TCanvas *canvas=0, const char *plotfile=0);
    void fitandsave(const char *name=0);
 };
 

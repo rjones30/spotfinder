@@ -55,6 +55,7 @@
 #include "Map2D.h"
 #include <list>
 #include <limits>
+#include <vector>
 
 #include <TMatrixD.h>
 #include <TDecompSVD.h>
@@ -80,24 +81,43 @@ TRandom3 *randoms = 0;
 Map2D::Map2D() : TH2D()
 {
    SetStats(0);
+   fLoopCurl = 0;
+   fLoopPixI = 0;
+   fLoopPixJ = 0;
 }
 
 Map2D::Map2D(const Map2D &m) : TH2D((TH2D&)m)
 {
    SetStats(0);
+   fLoopCurl = 0;
+   fLoopPixI = 0;
+   fLoopPixJ = 0;
 }
 
 Map2D::Map2D(const TH2D &h) : TH2D(h)
 {
    SetStats(0);
+   fLoopCurl = 0;
+   fLoopPixI = 0;
+   fLoopPixJ = 0;
 }
 
 Map2D::~Map2D()
-{ }
+{
+   delete fLoopCurl;   fLoopCurl = 0;
+   delete fLoopPixI;   fLoopPixI = 0;
+   delete fLoopPixJ;   fLoopPixJ = 0;
+}
 
 Map2D &Map2D::operator=(const Map2D &src)
 {
    int id = GetUniqueID();
+   delete fLoopCurl;
+   delete fLoopPixI;
+   delete fLoopPixJ;
+   fLoopCurl = 0;
+   fLoopPixI = 0;
+   fLoopPixJ = 0;
    (TH2D&)*this = (TH2D&)src;
    SetUniqueID(id);
    return *this;
@@ -733,7 +753,8 @@ Map2D &Map2D::Fill(const Map2D *map)
       // output map is lower resolution so oversample the input map
 
       Int_t noversample = 3 * dx * dy / (dx_s * dy_s);
-      Double_t xyrandom[2 * noversample];
+      //Double_t xyrandom[2 * noversample];
+      std::vector<Double_t> xyrandom(2 * noversample);
       if (randoms == 0) {
          randoms = new TRandom3(0);
       }
@@ -741,7 +762,7 @@ Map2D &Map2D::Fill(const Map2D *map)
          Double_t x0 = xmin+(i-0.5)*dx;
          for (Int_t j=1; j <= nybins; ++j) {
             Double_t y0 = ymin+(j-0.5)*dy;
-            randoms->RndmArray(2 * noversample, xyrandom);
+            randoms->RndmArray(2 * noversample, xyrandom.data());
             int nsamples = 0;
             Double_t zsum = 0;
             for (Int_t is=0; is < noversample; ++is) {
@@ -1139,8 +1160,10 @@ Int_t Map2D::Despike(Double_t maxheight, Int_t regionsize)
    }
 
    for (Int_t iy=1; iy < nybins; ++iy) {
-      Int_t rowsum0[nxbins];
-      Double_t rowsum1[nxbins];
+      //Int_t rowsum0[nxbins];
+      //Double_t rowsum1[nxbins];
+      std::vector<Int_t> rowsum0(nxbins);
+      std::vector<Double_t> rowsum1(nxbins);
       Int_t sum0 = rowsum0[0] = 0;
       Double_t sum1 = rowsum1[0] = 0;
       for (Int_t ix=1; ix < nxbins; ++ix) {
@@ -1161,8 +1184,10 @@ Int_t Map2D::Despike(Double_t maxheight, Int_t regionsize)
       }
    }
    for (Int_t ix=1; ix < nxbins; ++ix) {
-      Int_t colsum0[nybins];
-      Double_t colsum1[nybins];
+      //Int_t colsum0[nybins];
+      //Double_t colsum1[nybins];
+      std::vector<Int_t> colsum0(nybins);
+      std::vector<Double_t> colsum1(nybins);
       Int_t sum0 = colsum0[0] = 0;
       Double_t sum1 = colsum1[0] = 0;
       for (Int_t iy=1; iy < nybins; ++iy) {
@@ -1321,7 +1346,7 @@ Map2D &Map2D::Level()
    return Rotate(0,0,-alpha);
 }
 
-Map2D &Map2D::Normalize()
+Map2D &Map2D::Renormalize()
 {
    // Finds the maximum and minimum values of the map, excluding cells
    // with zero value, and sets the Max and Min to the corresponding values.
@@ -1430,13 +1455,22 @@ Double_t Map2D::TotalCurl(const Map2D *Vx, const Map2D *Vy,
    Int_t back[4] = {2,3,0,1};
 
    // Start at the center of the east coast and head northeast
-   Int_t istep=0;
-   Int_t jstep=0;
+   Int_t istep=-1;
+   Int_t jstep=-1;
    for (Int_t i=nxbins/2,j=nybins/2; i < nxbins; ++i) {
       if (bound[i*nybins+j] > 1) {
          istep = i;
          jstep = j;
       }
+   }
+   if (istep < 0 || jstep < 0) {
+      std::cerr << "Error in Map2D::TotalCurl - could not find a starting "
+                << "boundary pixel along the central row; the two input "
+                << "maps may not overlap near the center of the frame, "
+                << "please check their alignment and try again."
+                << std::endl;
+      delete [] bound;
+      return 0;
    }
    Int_t istart=istep;
    Int_t jstart=jstep;
@@ -1449,6 +1483,7 @@ Double_t Map2D::TotalCurl(const Map2D *Vx, const Map2D *Vy,
    Int_t skip=0;
    TCanvas *c1=0;
 #endif
+   Bool_t offedge=false;
    while (1 > 0) {
       SetBinContent(istep+1,jstep+1,5.1);
 
@@ -1468,6 +1503,7 @@ Double_t Map2D::TotalCurl(const Map2D *Vx, const Map2D *Vy,
          std::cout << "Enter number of steps to skip before pausing next: ";
          std::cin >> skip;
          if (skip < 0) {
+            delete [] bound;
             return 0;
          }
       }
@@ -1477,7 +1513,11 @@ Double_t Map2D::TotalCurl(const Map2D *Vx, const Map2D *Vy,
       Int_t nextdir = -1;
       for (Int_t d=1; d < 4; ++d) {
          Int_t dir = back[(stepdir+d)%4];
-         Double_t s = bound[(istep+di[dir])*nybins+jstep+dj[dir]];
+         Int_t itry = istep+di[dir];
+         Int_t jtry = jstep+dj[dir];
+         if (itry < 0 || itry >= nxbins || jtry < 0 || jtry >= nybins)
+            continue;
+         Double_t s = bound[itry*nybins+jtry];
          if (s > 1 && s < score) {
             nextdir = dir;
             score = s;
@@ -1488,10 +1528,16 @@ Double_t Map2D::TotalCurl(const Map2D *Vx, const Map2D *Vy,
             Int_t dir = back[(stepdir+d)%4];
             Int_t itry = istep+di[dir];
             Int_t jtry = jstep+dj[dir];
+            if (itry < 0 || itry >= nxbins || jtry < 0 || jtry >= nybins)
+               continue;
             if (bound[itry*nybins+jtry] > 0) {
                Double_t sees=0;
                for (Int_t dtry=0; dtry < 4; ++dtry) {
-                  Double_t s = bound[(itry+di[dtry])*nybins+jtry+dj[dtry]];
+                  Int_t itry2 = itry+di[dtry];
+                  Int_t jtry2 = jtry+dj[dtry];
+                  if (itry2 < 0 || itry2 >= nxbins || jtry2 < 0 || jtry2 >= nybins)
+                     continue;
+                  Double_t s = bound[itry2*nybins+jtry2];
                   if (s > 1 && s < 3) {
                      ++sees;
                   }
@@ -1517,6 +1563,7 @@ Double_t Map2D::TotalCurl(const Map2D *Vx, const Map2D *Vy,
          std::cerr << "Error in Map2D::TotalCurl - algorithm is stuck after "
                    << steps << " steps, and cannot continue."
                    << std::endl;
+         delete [] bound;
          return 0;
       }
       SetBinContent(istep+1,jstep+1,3.8);
@@ -1524,12 +1571,26 @@ Double_t Map2D::TotalCurl(const Map2D *Vx, const Map2D *Vy,
       stepdir = nextdir;
       istep += di[stepdir];
       jstep += dj[stepdir];
+      if (istep < 0 || istep >= nxbins || jstep < 0 || jstep >= nybins) {
+         std::cerr << "Error in Map2D::TotalCurl - boundary walk stepped "
+                   << "off the edge of the map at step " << steps
+                   << ", the two input maps likely do not overlap "
+                   << "sufficiently near the frame edge; please check "
+                   << "their alignment and try again."
+                   << std::endl;
+         offedge = true;
+         break;
+      }
       bound[istep*nybins+jstep] = -1;
       steps++;
       if (istep == istart && jstep == jstart) {
          dirseq.push_back(stepdir);
          break;
       }
+   }
+   if (offedge) {
+      delete [] bound;
+      return 0;
    }
 
    // Fill in any voids in the interior
@@ -1581,23 +1642,24 @@ Double_t Map2D::TotalCurl(const Map2D *Vx, const Map2D *Vy,
       *silhouette = new Map2D(*this);
    }
 
-   // Now follow the loop and compute the path integral
+   // Now follow the loop and compute the path integral, storing the
+   // results in the fLoopCurl/fLoopPixI/fLoopPixJ data members of *this
+   // rather than registering them under a fixed name with gROOT, which
+   // depends on ambient TH1::AddDirectory / current-directory state that
+   // this class does not control and cannot assume.
 
-   TH1D *loopcurl = (TH1D*)gROOT->FindObject("loopcurl");
-   TH1I *looppixi = (TH1I*)gROOT->FindObject("looppixi");
-   TH1I *looppixj = (TH1I*)gROOT->FindObject("looppixj");
-   if (loopcurl)
-      delete loopcurl;
-   if (looppixi)
-      delete looppixi;
-   if (looppixj)
-      delete looppixj;
-   loopcurl= new TH1D("loopcurl", "loop running curl",
-                      dirseq.size(), 0, dirseq.size());
-   looppixi = new TH1I("looppixi", "loop path i_pixel",
-                       dirseq.size(), 0, dirseq.size());
-   looppixj = new TH1I("looppixj", "loop path j_pixel",
-                       dirseq.size(), 0, dirseq.size());
+   delete fLoopCurl;
+   delete fLoopPixI;
+   delete fLoopPixJ;
+   fLoopCurl = new TH1D("loopcurl", "loop running curl",
+                        dirseq.size(), 0, dirseq.size());
+   fLoopPixI = new TH1I("looppixi", "loop path i_pixel",
+                        dirseq.size(), 0, dirseq.size());
+   fLoopPixJ = new TH1I("looppixj", "loop path j_pixel",
+                        dirseq.size(), 0, dirseq.size());
+   TH1D *loopcurl = fLoopCurl;
+   TH1I *looppixi = fLoopPixI;
+   TH1I *looppixj = fLoopPixJ;
 
    Reset();
    istep = istart;
@@ -1639,6 +1701,7 @@ Double_t Map2D::TotalCurl(const Map2D *Vx, const Map2D *Vy,
                 << std::endl;
       std::cerr << "   istart,jstart=" << istart << "," << jstart << std::endl
                 << "   istop,jstop=" << istep << "," << jstep << std::endl;
+      delete [] bound;
       return 0;
    }
 
@@ -1794,7 +1857,8 @@ Map2D &Map2D::Uncurl(const Map2D *Vx, const Map2D *Vy, Int_t comp)
       for (Int_t ix=1; ix < nxbins; ++ix) {
          double sum0 = 0;
          double sum1 = 0;
-         double Vxp[nybins];
+         //double Vxp[nybins];
+         std::vector<double> Vxp(nybins);
          for (Int_t iy=1; iy < nybins; ++iy) {
             double Vx_i_j = Vx->GetBinContent(ix,iy);
             double Vy_i_j = Vy->GetBinContent(ix,iy);
@@ -1834,7 +1898,8 @@ Map2D &Map2D::Uncurl(const Map2D *Vx, const Map2D *Vy, Int_t comp)
       for (Int_t iy=1; iy < nybins; ++iy) {
          double sum0 = 0;
          double sum1 = 0;
-         double Vyp[nxbins];
+         //double Vyp[nxbins];
+         std::vector<double> Vyp(nxbins);
          for (Int_t ix=1; ix < nxbins; ++ix) {
             double Vx_i_j = Vx->GetBinContent(ix,iy);
             double Vy_i_j = Vy->GetBinContent(ix,iy);
@@ -2043,7 +2108,7 @@ Int_t Map2D::PoissonSolve(const Map2D *rho, const Map2D *mask)
    Double_t dy = (ymax-ymin)/nybins;
    Double_t xrange = xmax-xmin-dx/2;
    Double_t yrange = ymax-ymin-dy/2;
-   Map2D *G = (Map2D*)gROOT->FindObject("G");
+   static Map2D *G = 0;
    if (G == 0 || G->GetNbinsX() != 2*nxbins-1 ||
                  G->GetNbinsY() != 2*nybins-1 ||
                  G->GetXaxis()->GetXmin() != -xrange ||
@@ -2606,17 +2671,10 @@ TH1D &Map2D::Profile(const char *name, const char *title,
 
 Map2D *Map2D::copy(const char *name) const
 {
-   // Protected method to do a "safe" clone operation on a Map2D object
-   // where "safe" means to test if an object with the desired name
-   // already exists and if so, delete it first, then create the clone.
+   // Protected method to do a "safe" clone operation on a Map2D object,
+   // producing a copy of *this named according to argument name.
    // This method MUST NOT be called with name == this->GetName().
 
-   TObject *old = gROOT->FindObject(name);
-   if (old) {
-      std::cerr << "Warning in Map2D::copy - overwriting existing map "
-                << "named " << name << std::endl;
-      delete old;
-   }
    Map2D *copy = new Map2D(*this);
    copy->SetName(name);
    return copy;

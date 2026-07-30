@@ -43,6 +43,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <vector>
 
 #include <TROOT.h>
 #include <TCanvas.h>
@@ -53,12 +54,10 @@
 #include <TFitResult.h>
 #include <TFitResultPtr.h>
 
-int nsearchpaths = 4;
+int nsearchpaths = 3;
 std::string searchpath[] = 
 {
-   "/var/www/html/tools/spotfinder/tmp",
-   "/home/www/docs/halld/diamonds/spotfinder/tmp",
-   "/home/www/docs/halld/diamonds/spotfinder/results",
+   "",
    "root://nod29.phys.uconn.edu//Gluex/beamline/diamonds/cls-6-2019/results/",
    "root://nod29.phys.uconn.edu//Gluex/beamline/diamonds/cls-11-2017/results/"
 };
@@ -92,6 +91,7 @@ Couples::Couples(const char *name, const char *title)
       fYwalk[p] = 0;
       fCleanMask[p] = 0;
       fMap[p] = 0;
+      fOrigMap[p] = 0;
       fMmu[p] = 0;
    }
    fZeroMask = 0;
@@ -114,6 +114,21 @@ Couples::Couples(const Couples &src)
 Couples::~Couples()
 {
    // destructor
+   delete fMcurl;      fMcurl = 0;
+   delete fGradX;      fGradX = 0;
+   delete fGradY;      fGradY = 0;
+   delete fSurface10;  fSurface10 = 0;
+   delete fSurface32;  fSurface32 = 0;
+   delete fContour10;  fContour10 = 0;
+   delete fContour32;  fContour32 = 0;
+   delete fSilhouette10; fSilhouette10 = 0;
+   delete fSilhouette32; fSilhouette32 = 0;
+   delete fDivergence10; fDivergence10 = 0;
+   delete fDivergence32; fDivergence32 = 0;
+   delete fDiff02;     fDiff02 = 0;
+   delete fDiff13;     fDiff13 = 0;
+   delete fDiff02p;    fDiff02p = 0;
+   delete fDiff13p;    fDiff13p = 0;
 }
 
 Couples &Couples::operator=(const Couples &src)
@@ -161,7 +176,29 @@ void Couples::copy(const Couples &src)
       else {
          fMap[p] = 0;
       }
+      if (src.fOrigMap[p]) {
+         fOrigMap[p] = new Map2D(*src.fOrigMap[p]);
+         fOrigMap[p]->SetDirectory(0);
+      }
+      else {
+         fOrigMap[p] = 0;
+      }
    }
+   fMcurl = 0;
+   fGradX = 0;
+   fGradY = 0;
+   fSurface10 = 0;
+   fSurface32 = 0;
+   fContour10 = 0;
+   fContour32 = 0;
+   fSilhouette10 = 0;
+   fSilhouette32 = 0;
+   fDivergence10 = 0;
+   fDivergence32 = 0;
+   fDiff02 = 0;
+   fDiff13 = 0;
+   fDiff02p = 0;
+   fDiff13p = 0;
    fXrange[0] = src.fXrange[0];
    fXrange[1] = src.fXrange[1];
    fYrange[0] = src.fYrange[0];
@@ -447,6 +484,10 @@ Map2D *Couples::getmap(int p, const char *name)
       deletemap(p);
    }
    if (fMap[p] == 0) {
+      if (fOrigMap[p] && fResultsPath[p].Length() == 0) {
+         regenmap(p);
+         return new Map2D(*fMap[p]);
+      }
       TFile *fresults = open(fResultsPath[p]);
       if (fresults == 0)
          return 0;
@@ -478,6 +519,11 @@ Map2D *Couples::getmap(int p, const char *name)
                 "is not currently supported, ignoring x/y skew=%lf\n",
                 fXYskew[p]);
       }
+      if (fOrigMap[p]) {
+         delete fOrigMap[p];
+      }
+      fOrigMap[p] = new Map2D(m2d);
+      fOrigMap[p]->SetDirectory(0);
       m2d.Rescale(fXscale[p], fYscale[p], 1);
       m2d.Rotate(0, 0, fPsirot[p]);
       m2d.Shift(fXshift[p], fYshift[p], 0);
@@ -509,6 +555,28 @@ Map2D *Couples::getmap(int p, const char *name)
       fMap[p]->SetTitle(title + " from " + fResultsPath[p](basename));
    }
    return new Map2D(*fMap[p]);
+}
+
+void Couples::setmap(int p, const Map2D *map, const char *name)
+{
+   // Directly install an already-prepared Map2D into slot p, bypassing
+   // the file-based read/cleanup/transform pipeline that getmap() would
+   // otherwise perform. The input is resampled onto the Couples object's
+   // current common grid (fXrange, fYrange, fPixels) via reshape(), so
+   // that all four members share identical pixel dimensions -- required
+   // by Divergence(), TotalCurl(), Add(), etc. Call setxrange()/setyrange()/
+   // setresol() beforehand to establish the desired common frame.
+
+   deletemap(p);
+   fMap[p] = reshape(map);
+   fMap[p]->SetName(map->GetName());
+   fResultsName[p] = name;
+
+   if (fOrigMap[p]) {
+      delete fOrigMap[p];
+   }
+   fOrigMap[p] = reshape(map);
+   fOrigMap[p]->SetDirectory(0);
 }
 
 Double_t Couples::getchi(int p) const
@@ -579,23 +647,20 @@ void Couples::lineup(int p0, int p1)
    "Performing a dynamic visual alignment of two images. At the prompt,\n"
    "you can enter the following commands to tweak the alignment, where\n"
    "the factor M is an optional multiplier of the minimum change step:\n"
-   " translation or rotation:\n"
-   " [M]r : shift image 2 to the right\n"
-   " [M]l : shift image 2 to the left\n"
-   " [M]u : shift image 2 up\n"
-   " [M]d : shift image 2 down\n"
-   " [M]p : rotate image 2 counter-clockwise\n"
-   " [M]n : rotate image 2 clockwise\n"
-   " [M]i : zoom in (expand) image 2\n"
-   " [M]o : zoom out (contract) image 2\n"
-   " [M]s : expand x, contract y on image 2\n"
-   " [M]t : contract x, expand y on image 2\n"
-   " [M]b : make image 2 more bright\n"
-   " [M]f : make image 2 more faint\n"
-   " [M]B : make image 1 more bright\n"
-   " [M]F : make image 1 more faint\n"
-   " [M]q : quit\n"
-   "    * : (or anything else) flip between the two images again\n"
+   " [M]r|R : shift image 2|1 to the right\n"
+   " [M]l|L : shift image 2|1 to the left\n"
+   " [M]u|U : shift image 2|1 up\n"
+   " [M]d|D : shift image 2|1 down\n"
+   " [M]p|P : rotate image 2|1 counter-clockwise\n"
+   " [M]n|N : rotate image 2|1 clockwise\n"
+   " [M]i|I : zoom in (expand) image 2|1\n"
+   " [M]o|O : zoom out (contract) image 2|1\n"
+   " [M]s|S : expand x, contract y on image 2|1\n"
+   " [M]t|T : contract x, expand y on image 2|1\n"
+   " [M]b|B : make image 2|1 more bright\n"
+   " [M]f|F : make image 2|1 more faint\n"
+   "      q : quit\n"
+   "      * : (or anything else) flip between the two images again\n"
    );
    TExec *pal1 = new TExec("pal1", "Couples::select_palette(0);");
    TExec *pal2 = new TExec("pal2", "Couples::select_palette(1);");
@@ -608,7 +673,7 @@ void Couples::lineup(int p0, int p1)
       pal2->Draw();
       fMap[p1]->Draw("col same");
       c1->Update();
-      pal1->Draw();
+      select_palette(0);
       printf("r/l/u/d/p/n/i/o/s/t/b/f/B/F/q/*? ");
       std::cout << std::flush;
       std::string res;
@@ -622,53 +687,103 @@ void Couples::lineup(int p0, int p1)
          mult = std::atoi(res.c_str());
       if (cmd == 'r') {
          double dx = mult * fMap[p1]->GetXaxis()->GetBinWidth(1);
-         fMap[p1]->Shift(dx, 0, 0);
          fXshift[p1] += dx;
+         regenmap(p1);
+      }
+      else if (cmd == 'R') {
+         double dx = mult * fMap[p0]->GetXaxis()->GetBinWidth(1);
+         fXshift[p0] += dx;
+         regenmap(p0);
       }
       else if (cmd == 'l') {
          double dx = mult * fMap[p1]->GetXaxis()->GetBinWidth(1);
-         fMap[p1]->Shift(-dx, 0, 0);
          fXshift[p1] -= dx;
+         regenmap(p1);
+      }
+      else if (cmd == 'L') {
+         double dx = mult * fMap[p0]->GetXaxis()->GetBinWidth(1);
+         fXshift[p0] -= dx;
+         regenmap(p0);
       }
       else if (cmd == 'u') {
          double dy = mult * fMap[p1]->GetYaxis()->GetBinWidth(1);
-         fMap[p1]->Shift(0, dy, 0);
          fYshift[p1] += dy;
+         regenmap(p1);
+      }
+      else if (cmd == 'U') {
+         double dy = mult * fMap[p0]->GetYaxis()->GetBinWidth(1);
+         fYshift[p0] += dy;
+         regenmap(p0);
       }
       else if (cmd == 'd') {
          double dy = mult * fMap[p1]->GetYaxis()->GetBinWidth(1);
-         fMap[p1]->Shift(0, -dy, 0);
          fYshift[p1] -= dy;
+         regenmap(p1);
+      }
+      else if (cmd == 'D') {
+         double dy = mult * fMap[p0]->GetYaxis()->GetBinWidth(1);
+         fYshift[p0] -= dy;
+         regenmap(p0);
       }
       else if (cmd == 'p') {
          double dphi = mult * 2.0 / fMap[p1]->GetNbinsX();
-         fMap[p1]->Rotate(0, 0, dphi);
          fPsirot[p1] += dphi;
          double sx = fXshift[p1];
          double sy = fYshift[p1];
          fXshift[p1] = sx * cos(dphi) - sy * sin(dphi);
          fYshift[p1] = sy * cos(dphi) + sx * sin(dphi);
+         regenmap(p1);
       }
-      else if (cmd == 'm') {
+      else if (cmd == 'P') {
+         double dphi = mult * 2.0 / fMap[p0]->GetNbinsX();
+         fPsirot[p0] += dphi;
+         double sx = fXshift[p0];
+         double sy = fYshift[p0];
+         fXshift[p0] = sx * cos(dphi) - sy * sin(dphi);
+         fYshift[p0] = sy * cos(dphi) + sx * sin(dphi);
+         regenmap(p0);
+      }
+      else if (cmd == 'n') {
          double dphi = mult * 2.0 / fMap[p1]->GetNbinsX();
-         fMap[p1]->Rotate(0, 0, -dphi);
          fPsirot[p1] -= dphi;
          double sx = fXshift[p1];
          double sy = fYshift[p1];
          fXshift[p1] = sx * cos(dphi) + sy * sin(dphi);
          fYshift[p1] = sy * cos(dphi) - sx * sin(dphi);
+         regenmap(p1);
+      }
+      else if (cmd == 'N') {
+         double dphi = mult * 2.0 / fMap[p0]->GetNbinsX();
+         fPsirot[p0] -= dphi;
+         double sx = fXshift[p0];
+         double sy = fYshift[p0];
+         fXshift[p0] = sx * cos(dphi) + sy * sin(dphi);
+         fYshift[p0] = sy * cos(dphi) - sx * sin(dphi);
+         regenmap(p0);
       }
       else if (cmd == 'i') {
          double dsize = 1 + mult * 2.0 / fMap[p1]->GetNbinsX();
-         fMap[p1]->Rescale(dsize, dsize, 1);
          fXscale[p1] *= dsize;
          fYscale[p1] *= dsize;
+         regenmap(p1);
+      }
+      else if (cmd == 'I') {
+         double dsize = 1 + mult * 2.0 / fMap[p0]->GetNbinsX();
+         fXscale[p0] *= dsize;
+         fYscale[p0] *= dsize;
+         regenmap(p0);
       }
       else if (cmd == 'o') {
          double dsize = 1 - mult * 2.0 / fMap[p1]->GetNbinsX();
-         fMap[p1]->Rescale(dsize, dsize, 1);
          fXscale[p1] *= dsize;
          fYscale[p1] *= dsize;
+         regenmap(p1);
+      }
+      else if (cmd == 'O') {
+         double dsize = 1 - mult * 2.0 / fMap[p0]->GetNbinsX();
+         fXscale[p0] *= dsize;
+         fYscale[p0] *= dsize;
+         regenmap(p0);
       }
 
 // A linear coordinate transformation is used to map from from raw images
@@ -772,7 +887,6 @@ void Couples::lineup(int p0, int p1)
 
       else if (cmd == 's') {
          double dsize = 1 + mult * 2.0 / fMap[p1]->GetNbinsX();
-         fMap[p1]->Rescale(dsize, 1/dsize, 1);
          fXshift[p1] *= dsize;
          fYshift[p1] /= dsize;
          double cos2phi = cos(2 * fPsirot[p1]);
@@ -782,10 +896,23 @@ void Couples::lineup(int p0, int p1)
          fXYskew[p1] *= 1 + (dsize - 1) * cos2phi;
          fXYskew[p1] -= 2 * (dsize - 1) * sin2phi * fYscale[p1];
          fPsirot[p1] += (dsize - 1) * sin2phi;
+         regenmap(p1);
+      }
+      else if (cmd == 'S') {
+         double dsize = 1 + mult * 2.0 / fMap[p0]->GetNbinsX();
+         fXshift[p0] *= dsize;
+         fYshift[p0] /= dsize;
+         double cos2phi = cos(2 * fPsirot[p0]);
+         double sin2phi = sin(2 * fPsirot[p0]);
+         fXscale[p0] *= 1 + (dsize - 1) * cos2phi;
+         fYscale[p0] *= 1 - (dsize - 1) * cos2phi;
+         fXYskew[p0] *= 1 + (dsize - 1) * cos2phi;
+         fXYskew[p0] -= 2 * (dsize - 1) * sin2phi * fYscale[p0];
+         fPsirot[p0] += (dsize - 1) * sin2phi;
+         regenmap(p0);
       }
       else if (cmd == 't') {
          double dsize = 1 - mult * 2.0 / fMap[p1]->GetNbinsX();
-         fMap[p1]->Rescale(dsize, 1/dsize, 1);
          fXshift[p1] *= dsize;
          fYshift[p1] /= dsize;
          double cos2phi = cos(2 * fPsirot[p1]);
@@ -795,6 +922,20 @@ void Couples::lineup(int p0, int p1)
          fXYskew[p1] *= 1 + (dsize - 1) * cos2phi;
          fXYskew[p1] -= 2 * (dsize - 1) * sin2phi * fYscale[p1];
          fPsirot[p1] += (dsize - 1) * sin2phi;
+         regenmap(p1);
+      }
+      else if (cmd == 'T') {
+         double dsize = 1 - mult * 2.0 / fMap[p0]->GetNbinsX();
+         fXshift[p0] *= dsize;
+         fYshift[p0] /= dsize;
+         double cos2phi = cos(2 * fPsirot[p0]);
+         double sin2phi = sin(2 * fPsirot[p0]);
+         fXscale[p0] *= 1 + (dsize - 1) * cos2phi;
+         fYscale[p0] *= 1 - (dsize - 1) * cos2phi;
+         fXYskew[p0] *= 1 + (dsize - 1) * cos2phi;
+         fXYskew[p0] -= 2 * (dsize - 1) * sin2phi * fYscale[p0];
+         fPsirot[p0] += (dsize - 1) * sin2phi;
+         regenmap(p0);
       }
       else if (cmd == 'b') {
          double zmax = fMap[p1]->GetMaximum();
@@ -1096,6 +1237,64 @@ void Couples::polycropper(int p)
    }
 }
 
+void Couples::regenmap(int p)
+{
+   // Rebuild fMap[p] from the cached pristine original fOrigMap[p],
+   // applying the full accumulated transform (rescale, rotate, shift,
+   // zero-mask, tilt) in a single pass, rather than compounding many small
+   // incremental transforms on top of an already-resampled raster. This
+   // avoids the aliasing artifacts (jagged "pinwheel" edges near matte
+   // boundaries) that build up when many tiny rotations, shifts, or
+   // rescales are applied successively to the same raster, as happens
+   // during an interactive lineup() session.
+
+   if (fOrigMap[p] == 0) {
+      printf("Error in Couples::regenmap - no original map cached for "
+             "slot %d, cannot regenerate.\n", p);
+      return;
+   }
+
+   Map2D m2d(*fOrigMap[p]);
+   m2d.Rescale(fXscale[p], fYscale[p], 1);
+   m2d.Rotate(0, 0, fPsirot[p]);
+   m2d.Shift(fXshift[p], fYshift[p], 0);
+   if (fZeroMask) {
+      Map2D mask(m2d);
+      mask.Reset();
+      mask.Fill(fZeroMask);
+      m2d.Mask(&mask);
+   }
+   if (fResultsName[p](0,3) == "hmu") {
+      m2d.Tilt(fXdisper[p], fYdisper[p]);
+   }
+
+   TString savedname = fMap[p]? TString(fMap[p]->GetName()) : TString(m2d.GetName());
+   TString savedtitle = fMap[p]? TString(fMap[p]->GetTitle()) : TString(m2d.GetTitle());
+   Bool_t haveMinMax = (fMap[p] != 0);
+   Double_t savedmin = haveMinMax? fMap[p]->GetMinimum() : 0;
+   Double_t savedmax = haveMinMax? fMap[p]->GetMaximum() : 0;
+
+   TH2D hmap("hmap", "", fPixels[0], fXrange[0], fXrange[1],
+                        fPixels[1], fYrange[0], fYrange[1]);
+   deletemap(p);
+   fMap[p] = new Map2D(hmap);
+   fMap[p]->SetDirectory(0);
+   fMap[p]->SetName(savedname);
+   fMap[p]->SetTitle(savedtitle);
+   fMap[p]->Fill(&m2d);
+   fMap[p]->Despeckle(fPixels[0]*fPixels[1]*0.4);
+   fMap[p]->GetXaxis()->SetTitle("x (mm)");
+   fMap[p]->GetYaxis()->SetTitle("y (mm)");
+   fMap[p]->GetYaxis()->SetTitleOffset(1.2);
+   fMap[p]->GetZaxis()->SetTitle("#murad");
+   fMap[p]->GetZaxis()->SetTitleOffset(1.5);
+   fMap[p]->SetContour(100);
+   if (haveMinMax) {
+      fMap[p]->SetMinimum(savedmin);
+      fMap[p]->SetMaximum(savedmax);
+   }
+}
+
 Map2D *Couples::level(Map2D *map, const char* newname)
 {
    // Tilt the surface of map to level it as much as possible.
@@ -1171,12 +1370,21 @@ Map2D *Couples::zerocurl(const Map2D *gx, const Map2D *gy, Map2D **silhouette)
    Map2D *curlmap = new Map2D(*gx);
    curlmap->TotalCurl(gx, gy, silhouette);
 
-   // TotalCurl generates some 1D histograms as by-products,
-   // use them to find a correction that zeros the total curl.
+   // TotalCurl() stores its by-products as data members on curlmap
+   // itself (fLoopCurl/fLoopPixI/fLoopPixJ), accessible via the
+   // GetLoopCurl()/GetLoopPixI()/GetLoopPixJ() accessors, rather than
+   // registering them under a fixed name with gROOT.
 
-   TH1D *loopcurl = (TH1D*)gROOT->FindObject("loopcurl");
-   TH1I *looppixi = (TH1I*)gROOT->FindObject("looppixi");
-   TH1I *looppixj = (TH1I*)gROOT->FindObject("looppixj");
+   const TH1D *loopcurl = curlmap->GetLoopCurl();
+   const TH1I *looppixi = curlmap->GetLoopPixI();
+   const TH1I *looppixj = curlmap->GetLoopPixJ();
+   if (loopcurl == 0 || looppixi == 0 || looppixj == 0) {
+      std::cerr << "Error in Couples::zerocurl - TotalCurl() did not "
+                << "produce the expected loop histograms, cannot continue."
+                << std::endl;
+      delete curlmap;
+      return 0;
+   }
    int nsteps = loopcurl->GetNbinsX();
    double ctotal = loopcurl->GetBinContent(nsteps)-1e-6;
    for (int istep=1; istep <= nsteps; ++istep) {
@@ -1185,7 +1393,6 @@ Map2D *Couples::zerocurl(const Map2D *gx, const Map2D *gy, Map2D **silhouette)
       double ci = loopcurl->GetBinContent(istep);
       ci -= (ctotal*istep)/nsteps;
       curlmap->SetBinContent(i+1, j+1, ci);
-      loopcurl->SetBinContent(istep, ci);
    }
    return curlmap;
 }
@@ -1231,14 +1438,28 @@ Double_t Couples::uncurl(const Map2D *gx, const Map2D *gy,
       if (curl == 0) {
          printf("Error in Couples::uncurl - unable to compute curl "
                 "on these images, the edges are too fragmented!\n");
+         delete mcurl;
+         delete grad[0];
+         delete grad[1];
          return 0;
       }
-      TH1D *loopcurl = (TH1D*)gROOT->FindObject("loopcurl");
+      // TotalCurl() stores its running-curl histogram as a data member
+      // on mcurl itself, accessible via GetLoopCurl(), rather than
+      // registering it under a fixed name with gROOT -- the latter
+      // silently fails to be found whenever TH1::AddDirectory(false)
+      // is in effect, as it is throughout this analysis.
+      const TH1D *loopcurl = mcurl->GetLoopCurl();
       TCanvas *c1 = (TCanvas*)gROOT->FindObject("c1");
-      if (c1) {
+      if (c1 && loopcurl) {
          c1->cd();
-         loopcurl->Draw();
+         const_cast<TH1D*>(loopcurl)->Draw();
          c1->Update();
+      }
+      else if (c1) {
+         std::cerr << "Warning in Couples::uncurl - TotalCurl() returned a "
+                   << "nonzero curl (" << curl << ") but did not produce a "
+                   << "loopcurl histogram; skipping the running-curl plot."
+                   << std::endl;
       }
       printf("curl=%lf, new chi (degrees, or enter to accept)? ", curl);
       std::cout << std::flush;
@@ -1254,6 +1475,12 @@ Double_t Couples::uncurl(const Map2D *gx, const Map2D *gy,
    mcurl->SetStats(0);
    grad[0]->SetStats(0);
    grad[1]->SetStats(0);
+   delete fMcurl;
+   delete fGradX;
+   delete fGradY;
+   fMcurl = mcurl;
+   fGradX = grad[0];
+   fGradY = grad[1];
    return curl;
 }
 
@@ -1311,8 +1538,6 @@ Map2D *Couples::divergence(int px, int py)
 
 void Couples::drawdiff(const char* name)
 {
-   // Take the 2d difference between complementary scans
-
    TString defname("hmu_moco");
    if (name == 0)
       name = defname.Data();
@@ -1322,37 +1547,77 @@ void Couples::drawdiff(const char* name)
       if (hmu[p] == 0) {
          printf("Error in Couples::drawdiff - no such topograph "
                 "named %s, cannot continue.\n", name);
+         for (int q=0; q<p; ++q)
+            delete hmu[q];
          return;
       }
    }
+   Map2D *diffmap[2] = {0,0};
+   TH1D *diffprof[2] = {0,0};
    for (int d=0; d<2; ++d) {
       hmu[d]->Add(hmu[d+2], -1);
       hmu[d]->Mask(fMap[d]);
       hmu[d]->Mask(fMap[d+2]);
-      TString name;
-      name.Form("diff%d%d",d,d+2);
-      hmu[d]->SetName(name);
+      TString diffname;
+      diffname.Form("diff%d%d",d,d+2);
+      hmu[d]->SetName(diffname);
       TString title(hmu[d]->GetTitle());
       hmu[d]->SetTitle(title + " difference");
       select_canvas(d);
       hmu[d]->SetContour(100);
       hmu[d]->SetStats(0);
       hmu[d]->Draw("colz");
-      double diffmin = hmu[d]->GetMinimum();
-      double diffmax = hmu[d]->GetMaximum();
-      TH1D *hprof = &hmu[d]->Profile(name + "p", 
+      double diffmin = 1e300;
+      double diffmax = -1e300;
+      for (int ix=1; ix <= hmu[d]->GetNbinsX(); ++ix) {
+         for (int iy=1; iy <= hmu[d]->GetNbinsY(); ++iy) {
+            double cont = hmu[d]->GetBinContent(ix,iy);
+            if (cont == 0)
+               continue;
+            diffmin = (cont < diffmin)? cont : diffmin;
+            diffmax = (cont > diffmax)? cont : diffmax;
+         }
+      }
+      if (diffmin > diffmax) {
+         std::cerr << "Warning in Couples::drawdiff - no overlapping "
+                   << "non-matte pixels found for diff" << d << (d+2)
+                   << "; skipping this pair." << std::endl;
+         continue;
+      }
+      TH1D *hprof = &hmu[d]->Profile(diffname + "p", 
                                      title + " difference profile",
                                      1000, diffmin, diffmax);
       select_canvas(d+2);
       gStyle->SetOptFit();
       TFitResultPtr fitres = hprof->Fit("gaus", "qs");
-      diffmin = fitres->Parameter(1) - 15*fitres->Parameter(2);
-      diffmax = fitres->Parameter(1) + 15*fitres->Parameter(2);
-      hmu[d]->SetMinimum(diffmin);
-      hmu[d]->SetMaximum(diffmax);
-      hprof->GetXaxis()->SetRangeUser(diffmin, diffmax);
+      if (fitres.Get() != 0 && fitres->Status() == 0) {
+         diffmin = fitres->Parameter(1) - 15*fitres->Parameter(2);
+         diffmax = fitres->Parameter(1) + 15*fitres->Parameter(2);
+         hmu[d]->SetMinimum(diffmin);
+         hmu[d]->SetMaximum(diffmax);
+         hprof->GetXaxis()->SetRangeUser(diffmin, diffmax);
+      }
+      else {
+         std::cerr << "Warning in Couples::drawdiff - gaussian fit failed "
+                   << "for diff" << d << (d+2) << "p (likely no overlapping "
+                   << "non-matte pixels between slots " << d << " and " << d+2
+                   << "); skipping the automatic z-range zoom for this pair."
+                   << std::endl;
+      }
       hprof->Draw();
+      diffmap[d] = hmu[d];
+      diffprof[d] = hprof;
    }
+   delete hmu[2];
+   delete hmu[3];
+   delete fDiff02;
+   delete fDiff13;
+   delete fDiff02p;
+   delete fDiff13p;
+   fDiff02 = diffmap[0];
+   fDiff13 = diffmap[1];
+   fDiff02p = diffprof[0];
+   fDiff13p = diffprof[1];
 }
 
 Map2D *Couples::surface(const char *name)
@@ -1376,7 +1641,7 @@ Map2D *Couples::surface(const char *name)
    Map2D *mcurl[2];
    Map2D *msilh[2]={0,0};
    curl[0] = uncurl(1,0,&msilh[0]);
-   mcurl[0] = (Map2D*)gROOT->FindObject("mcurl");
+   mcurl[0] = (curl[0] != 0)? new Map2D(*GetMcurl()) : 0;
    if (curl[0] == 0 || mcurl[0] == 0) {
       printf("Error in Couples::surface - total curl returns 0!\n");
       return 0;
@@ -1389,7 +1654,7 @@ Map2D *Couples::surface(const char *name)
    msilh[0]->SetTitle("outer contour silhouette 1,0");
    msilh[0]->SetName("silhouette10");
    curl[1] = uncurl(3,2,&msilh[1]);
-   mcurl[1] = (Map2D*)gROOT->FindObject("mcurl");
+   mcurl[1] = (curl[1] != 0)? new Map2D(*GetMcurl()) : 0;
    if (curl[1] == 0 || mcurl[1] == 0) {
       printf("Error in Couples::surface - total curl returns 0!\n");
       return 0;
@@ -1405,16 +1670,28 @@ Map2D *Couples::surface(const char *name)
    mdive[0] = divergence(1,0);
    mdive[0]->SetTitle("divergence 1,0 (1/mm)");
    mdive[0]->SetName("divergence10");
-   mdive[0]->SetDirectory(gDirectory);
+   mdive[0]->SetDirectory(0);
    mdive[1] = divergence(3,2);
    mdive[1]->SetTitle("divergence 3,2 (1/mm)");
    mdive[1]->SetName("divergence32");
-   mdive[1]->SetDirectory(gDirectory);
+   mdive[1]->SetDirectory(0);
+   delete fContour10;
+   delete fContour32;
+   delete fSilhouette10;
+   delete fSilhouette32;
+   delete fDivergence10;
+   delete fDivergence32;
+   fContour10 = mcurl[0];
+   fContour32 = mcurl[1];
+   fSilhouette10 = msilh[0];
+   fSilhouette32 = msilh[1];
+   fDivergence10 = mdive[0];
+   fDivergence32 = mdive[1];
    Map2D *msurf[2];
    msurf[0] = new Map2D(mcurl[0]);
    msurf[0]->SetName("surface10");
    msurf[0]->SetTitle("(1,0,0) surface 10");
-   msurf[0]->SetDirectory(gDirectory);
+   msurf[0]->SetDirectory(0);
    msurf[0]->GetXaxis()->SetTitle("x (mm)");
    msurf[0]->GetYaxis()->SetTitle("y (mm)");
    msurf[0]->GetZaxis()->SetTitle("z (#mum)");
@@ -1426,7 +1703,7 @@ Map2D *Couples::surface(const char *name)
    msurf[1] = new Map2D(mcurl[1]);
    msurf[1]->SetName("surface32");
    msurf[1]->SetTitle("(1,0,0) surface 32");
-   msurf[1]->SetDirectory(gDirectory);
+   msurf[1]->SetDirectory(0);
    msurf[1]->GetXaxis()->SetTitle("x (mm)");
    msurf[1]->GetYaxis()->SetTitle("y (mm)");
    msurf[1]->GetZaxis()->SetTitle("z (#mum)");
@@ -1435,6 +1712,10 @@ Map2D *Couples::surface(const char *name)
    msurf[1]->Shift(0,0,-msurf[1]->GetMinimum());
    msurf[1]->Rescale(1,1,1e-3);
    msurf[1]->SetContour(100);
+   delete fSurface10;
+   delete fSurface32;
+   fSurface10 = msurf[0];
+   fSurface32 = msurf[1];
    return msurf[0];
 }
 
@@ -1451,7 +1732,7 @@ Map2D *Couples::surface(const Map2D *dive, const Map2D *bcon)
    // the caller.
 
    Map2D *msurf = new Map2D(bcon);
-   msurf->SetDirectory(gDirectory);
+   msurf->SetDirectory(0);
    msurf->PoissonSolve(dive);
    msurf->SetTitle("surface for " + TString(GetTitle()));
    msurf->GetXaxis()->SetTitle("x (mm)");
@@ -1765,7 +2046,7 @@ void Couples::remove_walk(Map2D *target, Map2D *mmu, double dydtheta)
    double mu0 = (mmu->GetMaximum() + mmu->GetMinimum())/2;
    for (Int_t i=1; i <= nxbins; ++i) {
       double x = target->GetXaxis()->GetBinCenter(i);
-      double yprime[nybins+2];
+      std::vector<double> yprime(nybins+2);
       yprime[0] = 0;
       for (Int_t j=1; j <= nybins; ++j) {
          double y = target->GetYaxis()->GetBinCenter(j);
@@ -1980,6 +2261,11 @@ void Couples::draw(const char *name)
       if (getmap(p, name)) {
          fMap[p]->SetContour(100);
          fMap[p]->Draw("colz");
+         can->Update();
+      }
+      else {
+         printf("Couples::draw - getmap(%d, \"%s\") returned null, "
+                "nothing drawn on canvas %s\n", p, name, can->GetName());
       }
    }
 }
@@ -1993,28 +2279,28 @@ TCanvas *Couples::select_canvas(int p)
    if (p == 0) {
       can = (TCanvas*)gROOT->FindObject("c1");
       if (can == 0) {
-         can = new TCanvas("c1", "c1", 0, 0, 560, 500);
+         can = new TCanvas("c1", "c1", 0, 0, 460, 460);
          can->SetRightMargin(0.15);
       }
    }
    else if (p == 1) {
       can = (TCanvas*)gROOT->FindObject("c2");
       if (can == 0) {
-         can = new TCanvas("c2", "c2", 0, 600, 560, 500);
+         can = new TCanvas("c2", "c2", 0, 520, 460, 460);
          can->SetRightMargin(0.15);
       }
    }
    else if (p == 2) {
       can = (TCanvas*)gROOT->FindObject("c3");
       if (can == 0) {
-         can = new TCanvas("c3", "c3", 562, 0, 560, 500);
+         can = new TCanvas("c3", "c3", 470, 0, 460, 460);
          can->SetRightMargin(0.15);
       }
    }
    else {
       can = (TCanvas*)gROOT->FindObject("c4");
       if (can == 0) {
-         can = new TCanvas("c4", "c4", 562, 600, 560, 500);
+         can = new TCanvas("c4", "c4", 470, 520, 460, 460);
          can->SetRightMargin(0.15);
       }
    }
@@ -2022,14 +2308,14 @@ TCanvas *Couples::select_canvas(int p)
    return can;
 }
 
-void Couples::save(const char *name, TCanvas *canvas, const char *plotfile)
+void Couples::save(const char *name, const TObject *obj, TCanvas *canvas, const char *plotfile)
 {
-   TH1 *h = (TH1*)gDirectory->Get(name);
-   if (h == 0) {
-      printf("Error in save - object named %s not found!\n", name);
+   if (obj == 0) {
+      printf("Error in save - no object provided for name %s!\n", name);
       return;
    }
-   h->Write();
+   TH1 *h = (TH1*)obj;
+   h->Write(name);
    if (canvas) {
       canvas->cd();
       if (h->InheritsFrom("Map2D")) {
@@ -2057,8 +2343,10 @@ void Couples::fitandsave(const char *name)
              "cannot continue\n");
       return;
    }
-   Map2D *surface10 = (Map2D*)gROOT->FindObject("surface10");
-   Map2D *surface32 = (Map2D*)gROOT->FindObject("surface32");
+   Map2D *surface10 = const_cast<Map2D*>(GetSurface10());
+   Map2D *surface32 = const_cast<Map2D*>(GetSurface32());
+   Map2D *silhouette10 = const_cast<Map2D*>(GetSilhouette10());
+   Map2D *silhouette32 = const_cast<Map2D*>(GetSilhouette32());
    if (surface10 == 0 || surface32 == 0) {
       printf("Error in Couples::fitandsave - "
              "Couples::surface returns ok, but no surface10 "
@@ -2069,16 +2357,18 @@ void Couples::fitandsave(const char *name)
       level(surface10);
       level(surface32);
    }
-   save("surface10", select_canvas(0), "surface10.png");
-   save("surface32", select_canvas(2), "surface32.png");
+   save("surface10", surface10, select_canvas(0), "surface10.png");
+   save("surface32", surface32, select_canvas(2), "surface32.png");
    Map2D *sdiff = new Map2D(surface10);
    sdiff->SetName("surfacediff");
    TString title(sdiff->GetTitle());
    sdiff->SetTitle(title + " difference");
    sdiff->Add(surface32,-1);
-   sdiff->Mask((Map2D*)gROOT->FindObject("silhouette10"));
-   sdiff->Mask((Map2D*)gROOT->FindObject("silhouette32"));
-   save("surfacediff", select_canvas(1), "surfacediff.png");
+   if (silhouette10)
+      sdiff->Mask(silhouette10);
+   if (silhouette32)
+      sdiff->Mask(silhouette32);
+   save("surfacediff", sdiff, select_canvas(1), "surfacediff.png");
    TH1D &sdiffpro = sdiff->Profile("surfacediffpro", 
                                    title + " difference profile",
                                    500, sdiff->GetMinimum(),
@@ -2089,16 +2379,16 @@ void Couples::fitandsave(const char *name)
       double sig = fres->Parameter(2);
       sdiffpro.GetXaxis()->SetRangeUser(mu-10*sig, mu+10*sig);
    }
-   save("surfacediffpro", select_canvas(3), "surfacediffpro.png");
-   save("contour10");
-   save("silhouette10");
-   save("divergence10");
-   save("contour32");
-   save("silhouette32");
-   save("divergence32");
+   save("surfacediffpro", &sdiffpro, select_canvas(3), "surfacediffpro.png");
+   save("contour10", GetContour10());
+   save("silhouette10", GetSilhouette10());
+   save("divergence10", GetDivergence10());
+   save("contour32", GetContour32());
+   save("silhouette32", GetSilhouette32());
+   save("divergence32", GetDivergence32());
    drawdiff();
-   save("diff02", select_canvas(0), "diff02.png");
-   save("diff13", select_canvas(1), "diff13.png");
-   save("diff02p", select_canvas(2), "diff02p.png");
-   save("diff13p", select_canvas(3), "diff13p.png");
+   save("diff02", GetDiff02(), select_canvas(0), "diff02.png");
+   save("diff13", GetDiff13(), select_canvas(1), "diff13.png");
+   save("diff02p", GetDiff02p(), select_canvas(2), "diff02p.png");
+   save("diff13p", GetDiff13p(), select_canvas(3), "diff13p.png");
 }
