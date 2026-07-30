@@ -32,7 +32,8 @@ app = Celery("cobrems_worker", backend=f"redis://:{os.environ['REDIS_PASSWORD']}
 app.conf.update(result_expires=1200,
         task_queues=(Queue("celery", routing_key="celery", durable=True),),
         task_default_queue="celery",
-        worker_enable_remote_control=False)
+        worker_enable_remote_control=False,
+        broker_connection_retry_on_startup=True)
 
 @app.task
 def fill_random_hist(pid, nrand):
