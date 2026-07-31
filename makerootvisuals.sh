@@ -13,7 +13,8 @@
 touch x || exit 1
 /bin/rm x
 
-sudo -u gluex bash -c '
+# wrapping this in sudo avoids any session-specific environment changes that might interfere
+sudo -u $USER bash -c '
 source setup.sh
 rm -f CobremsGeneration_cc.so CobremsGeneration_cc.d CobremsGeneration_cc_ACLiC_dict_rdict.pcm
 rm -f Couples_C.so Couples_C.d Couples_C_ACLiC_dict_rdict.pcm
@@ -23,6 +24,6 @@ $ROOTSYS/bin/root -l -b -q makerootvisuals.C
 '
 
 if [[ $? = 0 ]]; then
-    echo "Fresh libraries built, now copy to deployment area as:"
-    echo "cp CobremsGeneration_cc* Couples_C* Map2D_cc* rootvisuals_C* /var/www/html/tools/spotfinder"
+    echo "Fresh libraries built, now copy to deployment area with a command like:"
+    echo " $ cp CobremsGeneration_cc* Couples_C* Map2D_cc* rootvisuals_C* /var/www/html/tools/spotfinder"
 fi
