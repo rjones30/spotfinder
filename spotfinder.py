@@ -21,6 +21,7 @@ import subprocess
 from urllib import parse as urlparse
 import numpy as np
 import pickle
+import json
 import base64
 import random
 import time
@@ -40,9 +41,37 @@ ROOT = cobrems_worker.ROOT
 radiator_names = ["JD70-103", "JD70-106", "JD70-107", "JD70-109",
                   "JD80-211", "JD80-212", "JD80-213"]
 radiator_views = {"front": "_front_view.png", "back": "_back_view.png"}
+css_px_per_mm = 33.0  # tune this once to get radiator right-sized in browser
+beam_center_x_px = 385  # pick a value that centers things in your browser
+beam_center_y_px = 385  # pick a value that centers things in your browser
 
 mElectron = 0.51099895e-3 # GeV/c^2
 qDiamond = 9.8e-6 # GeV/c
+
+def get_radiator_geometry(radname, radview):
+    """
+    Reads the physical size, pixel size, and pixel-space center of the
+    diamond crystal within a radiator's front/back view PNG, from a JSON
+    sidecar file (e.g. JD80-211_front_view.json alongside
+    JD80-211_front_view.png). This decouples the crystal's true geometry
+    from how much surrounding whitespace/margin happens to be present in
+    the source PNG. Falls back to defaults matching the original
+    7mm-square, tightly-cropped convention if no sidecar file is found,
+    and returns a status message describing what happened.
+    """
+    view_suffix = radiator_views[radview]  # e.g. "_front_view.png"
+    json_path = f"{docroot}{topdir}/{radname}{view_suffix[:-4]}.json"
+    try:
+        with open(json_path) as f:
+            geom = json.load(f)
+        return (geom["width_mm"], geom["height_mm"],
+                geom["width_px"], geom["height_px"],
+                geom["center_x_px"], geom["center_y_px"],
+                "") #f"loaded geometry from {json_path}")
+    except FileNotFoundError:
+        return 7.0, 7.0, 280, 280, 140, 140, f"WARNING: sidecar not found at {json_path}, using 7mm defaults"
+    except (KeyError, json.JSONDecodeError) as e:
+        return 7.0, 7.0, 280, 280, 140, 140, f"WARNING: sidecar at {json_path} is malformed ({e}), using 7mm defaults"
 
 def draw_beamspot(args, size_px=600):
    """
@@ -463,6 +492,12 @@ def process_request(env, pars):
    args["radname"] = get_form_var("radiator_name", pars, dtype=str, default=radiator_names[0], err=logmsg)
    args["radview"] = get_form_var("radiator_view", pars, dtype=str, default="front", err=logmsg)
    args['iradview'] = 1 if args['radview'] == "back" else 0
+   (args["radwidth_mm"], args["radheight_mm"], args["radwidth_px"], args["radheight_px"],
+    args["radcenter_x_px"], args["radcenter_y_px"], args["radgeom_status"]) = get_radiator_geometry(args["radname"], args["radview"])
+   args["img_css_width"] = args["radwidth_mm"] * css_px_per_mm
+   args["img_css_height"] = args["radheight_mm"] * css_px_per_mm
+   args["center_x_css"] = args["radcenter_x_px"] * (args["img_css_width"] / args["radwidth_px"])
+   args["center_y_css"] = args["radcenter_y_px"] * (args["img_css_height"] / args["radheight_px"])
    args["ebeam"] = get_form_var("ebeam_energy", pars, dtype=float, default=11.6, unit="GeV", err=logmsg)
    args["penergy0"] = get_form_var("pbeam_energy_min", pars, dtype=float, default=4.5, unit="GeV", err=logmsg)
    args["penergy1"] = get_form_var("pbeam_energy_max", pars, dtype=float, default=7.0, unit="GeV", err=logmsg)
@@ -541,8 +576,6 @@ def process_request(env, pars):
   z-index: -2;
 }}
 .canvas-overlay {{
-  width: 280px;
-  height: 280px;
   position: absolute;
   top: 0px;
   left: 0px;
@@ -624,7 +657,8 @@ Richard Jones, University of Connecticut, June 2022
   <div class="canvas-container">
    <img class="canvas-frame" src="{img}" alt="beam spot image at radiator"/>
    <img class="canvas-overlay" src="{tmpdir}/{args['radname'] + radiator_views[args['radview']]}"
-        id="radiator_image" style="transform: translate(120px,180px);" alt="radiator topographic image"/>
+        id="radiator_image" style="width: {args['img_css_width']}px; height: {args['img_css_height']}px;"
+        alt="radiator topographic image"/>
   </div>
   <div style="text-align: center; vertical-align: bottom;">
    <a href="#" class="collimation-form-open">Check / modify parameters related to photon beam collimation</a>
@@ -779,13 +813,14 @@ Richard Jones, University of Connecticut, June 2022
     """.encode()]
    for msg in logmsg:
       output.append(f"<p>{msg}</p>".encode())
+   output.append(f"<p style='color: red;'>{args['radgeom_status']}</p>".encode())
    output.append(f"""
 <script>
-var radiator_px_per_mm = 24.2;
-var radiator_xshift_px = 160;
-var radiator_yshift_px = 160;
-var radiator_xcenter_px = 0;
-var radiator_ycenter_px = 15;
+var css_px_per_mm = {css_px_per_mm};
+var radiator_center_x_css = {args['center_x_css']};
+var radiator_center_y_css = {args['center_y_css']};
+var beam_center_x_px = {beam_center_x_px};
+var beam_center_y_px = {beam_center_y_px};
 const max_pending_requests = 3;
 var pending_requests = 0;
 const queued_requests = [];
@@ -805,16 +840,15 @@ function animateRadiatorMotion() {{
   var snapact = document.getElementById("snap_action");
   snapact.setAttribute("value", "off");
   var xel = document.getElementById("rad_xoffset");
-  var xoffset_px = +xel.value * radiator_px_per_mm + radiator_xshift_px;
+  var xoffset_px = +xel.value * css_px_per_mm - radiator_center_x_css + beam_center_x_px;
   var yel = document.getElementById("rad_yoffset");
-  var yoffset_px = -yel.value * radiator_px_per_mm + radiator_yshift_px;
+  var yoffset_px = -yel.value * css_px_per_mm - radiator_center_y_css + beam_center_y_px;
   var pel = document.getElementById("rad_phideg");
   var phideg = pel.value;
   var rel = document.getElementById("radiator_image");
   var xform = "translate(" + xoffset_px + "px," + yoffset_px + "px)";
   xform += " rotate(" + phideg + "deg)";
-  xform += " translate(" + radiator_xcenter_px + "px," + radiator_ycenter_px + "px)";
-  rel.setAttribute("style", "transform: " + xform + ";");
+  rel.style.transform = xform;
   var elmnt = document.getElementById("cobrems-spectrum-plots");
   refreshSpectrumPlots();
 }}
