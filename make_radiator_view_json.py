@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 #
-# make_radiator_view_json.py - interactively mark the lower-left and
-# upper-right corners of the diamond crystal in a radiator view PNG,
-# enter its physical width/height in mm, and write out a sidecar JSON
-# file describing the crystal's geometry within the image, for use by
-# spotfinder.py's get_radiator_geometry().
+# make_radiator_view_json.py - interactively mark two diagonally opposite
+# corners of the diamond crystal in a radiator view PNG (either the
+# lower-left + upper-right pair, or the upper-left + lower-right pair --
+# whichever pair is clearly visible in the image), enter its physical
+# width/height in mm, and write out a sidecar JSON file describing the
+# crystal's geometry within the image, for use by spotfinder.py's
+# get_radiator_geometry().
 #
 # This is a standalone developer tool, run once per new radiator image
 # on a local workstation -- it is not part of the spotfinder web app
@@ -36,13 +38,13 @@ def main():
 
     fig, ax = plt.subplots()
     ax.imshow(img)
-    ax.set_title("Click the LOWER-LEFT corner of the radiator,\n"
-                 "then the UPPER-RIGHT corner")
+    ax.set_title("Click any two DIAGONALLY OPPOSITE corners of the radiator\n"
+                 "(e.g. lower-left + upper-right, OR upper-left + lower-right)")
     plt.tight_layout()
 
     print(f"Image native size: {width_px_full} x {height_px_full} px")
-    print("Click the LOWER-LEFT corner of the radiator crystal, "
-          "then the UPPER-RIGHT corner, in the image window...")
+    print("Click any two diagonally opposite corners of the radiator crystal "
+          "(whichever pair is clearly visible) in the image window...")
     pts = plt.ginput(2, timeout=0)
     plt.close(fig)
 
@@ -53,9 +55,10 @@ def main():
     (x0, y0), (x1, y1) = pts
     # matplotlib imshow reports (x, y) in native image pixel coordinates,
     # with y=0 at the top row -- same orientation as the raw pixel grid.
-    # min/max are used here rather than trusting click order, so the
-    # result is robust even if the two corners are clicked in a different
-    # order than "lower-left then upper-right".
+    # min/max are used here rather than trusting click order or which
+    # diagonal was clicked, so the result is correct whether the user
+    # clicks lower-left + upper-right, or upper-left + lower-right --
+    # any two diagonally opposite corners give the same bounding box.
     x_left = min(x0, x1)
     x_right = max(x0, x1)
     y_top = min(y0, y1)
