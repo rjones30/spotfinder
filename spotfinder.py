@@ -25,6 +25,7 @@ import json
 import base64
 import random
 import time
+import struct
 
 # The following variables MUST be customized for the local site
 docroot = "/var/www/html"
@@ -41,37 +42,45 @@ ROOT = cobrems_worker.ROOT
 radiator_names = ["JD70-103", "JD70-106", "JD70-107", "JD70-109",
                   "JD80-211", "JD80-212", "JD80-213"]
 radiator_views = {"front": "_front_view.png", "back": "_back_view.png"}
-css_px_per_mm = 33.0  # tune this once to get radiator right-sized in browser
-beam_center_x_px = 385  # pick a value that centers things in your browser
-beam_center_y_px = 385  # pick a value that centers things in your browser
+css_px_per_mm = 24.2  # tune this once to get radiator right-sized in browser
+beam_center_x_px = 305  # pick a value that centers things in your browser
+beam_center_y_px = 305  # pick a value that centers things in your browser
 
 mElectron = 0.51099895e-3 # GeV/c^2
 qDiamond = 9.8e-6 # GeV/c
 
+
 def get_radiator_geometry(radname, radview):
-    """
-    Reads the physical size, pixel size, and pixel-space center of the
-    diamond crystal within a radiator's front/back view PNG, from a JSON
-    sidecar file (e.g. JD80-211_front_view.json alongside
-    JD80-211_front_view.png). This decouples the crystal's true geometry
-    from how much surrounding whitespace/margin happens to be present in
-    the source PNG. Falls back to defaults matching the original
-    7mm-square, tightly-cropped convention if no sidecar file is found,
-    and returns a status message describing what happened.
-    """
-    view_suffix = radiator_views[radview]  # e.g. "_front_view.png"
+    view_suffix = radiator_views[radview]
+    png_path = f"{docroot}{topdir}/{radname}{view_suffix}"
     json_path = f"{docroot}{topdir}/{radname}{view_suffix[:-4]}.json"
+    width_px_full, height_px_full = get_png_dimensions(png_path)
     try:
         with open(json_path) as f:
             geom = json.load(f)
         return (geom["width_mm"], geom["height_mm"],
                 geom["width_px"], geom["height_px"],
                 geom["center_x_px"], geom["center_y_px"],
+                width_px_full, height_px_full,
                 "") #f"loaded geometry from {json_path}")
     except FileNotFoundError:
-        return 7.0, 7.0, 280, 280, 140, 140, f"WARNING: sidecar not found at {json_path}, using 7mm defaults"
+        return 7.0, 7.0, 280, 280, 140, 140, width_px_full, height_px_full, \
+               f"WARNING: sidecar not found at {json_path}, using 7mm defaults"
     except (KeyError, json.JSONDecodeError) as e:
-        return 7.0, 7.0, 280, 280, 140, 140, f"WARNING: sidecar at {json_path} is malformed ({e}), using 7mm defaults"
+        return 7.0, 7.0, 280, 280, 140, 140, width_px_full, height_px_full, \
+               f"WARNING: sidecar at {json_path} is malformed ({e}), using 7mm defaults"
+
+def get_png_dimensions(path):
+    """
+    Reads the native pixel width/height directly from a PNG file's
+    IHDR chunk header, without needing Pillow or any other imaging
+    library -- just the standard 8-byte width+height field that PNG
+    guarantees appears at a fixed offset near the start of every file.
+    """
+    with open(path, "rb") as f:
+        f.seek(16)  # skip 8-byte PNG signature + 4-byte chunk length + 4-byte "IHDR" tag
+        width, height = struct.unpack(">II", f.read(8))
+    return width, height
 
 def draw_beamspot(args, size_px=600):
    """
@@ -493,11 +502,13 @@ def process_request(env, pars):
    args["radview"] = get_form_var("radiator_view", pars, dtype=str, default="front", err=logmsg)
    args['iradview'] = 1 if args['radview'] == "back" else 0
    (args["radwidth_mm"], args["radheight_mm"], args["radwidth_px"], args["radheight_px"],
-    args["radcenter_x_px"], args["radcenter_y_px"], args["radgeom_status"]) = get_radiator_geometry(args["radname"], args["radview"])
-   args["img_css_width"] = args["radwidth_mm"] * css_px_per_mm
-   args["img_css_height"] = args["radheight_mm"] * css_px_per_mm
-   args["center_x_css"] = args["radcenter_x_px"] * (args["img_css_width"] / args["radwidth_px"])
-   args["center_y_css"] = args["radcenter_y_px"] * (args["img_css_height"] / args["radheight_px"])
+    args["radcenter_x_px"], args["radcenter_y_px"], args["radwidth_px_full"], args["radheight_px_full"],
+    args["radgeom_status"]) = get_radiator_geometry(args["radname"], args["radview"])
+   scale = args["radwidth_mm"] * css_px_per_mm / args["radwidth_px"]
+   args["img_css_width"] = args["radwidth_px_full"] * scale
+   args["img_css_height"] = args["radheight_px_full"] * scale
+   args["center_x_css"] = args["radcenter_x_px"] * scale
+   args["center_y_css"] = args["radcenter_y_px"] * scale
    args["ebeam"] = get_form_var("ebeam_energy", pars, dtype=float, default=11.6, unit="GeV", err=logmsg)
    args["penergy0"] = get_form_var("pbeam_energy_min", pars, dtype=float, default=4.5, unit="GeV", err=logmsg)
    args["penergy1"] = get_form_var("pbeam_energy_max", pars, dtype=float, default=7.0, unit="GeV", err=logmsg)
@@ -510,6 +521,8 @@ def process_request(env, pars):
    args["xoffset"] = get_form_var("rad_xoffset", pars, dtype=float, default=0, unit="mm", err=logmsg)
    args["yoffset"] = get_form_var("rad_yoffset", pars, dtype=float, default=0, unit="mm", err=logmsg)
    args["phideg"] = get_form_var("rad_phideg", pars, dtype=float, default=0, unit="deg", err=logmsg)
+   args["xoffset_px"] = args["xoffset"] * css_px_per_mm - args["center_x_css"] + beam_center_x_px
+   args["yoffset_px"] = -args["yoffset"] * css_px_per_mm - args["center_y_css"] + beam_center_y_px
    args["thetah"] = get_form_var("rad_thetah", pars, dtype=float, default=0, unit="mr", err=logmsg)
    args["thetav"] = get_form_var("rad_thetav", pars, dtype=float, default=0, unit="mr", err=logmsg)
    args["snapact"] = get_form_var("snap_action", pars, dtype=str, default="off", err=logmsg)
@@ -657,7 +670,7 @@ Richard Jones, University of Connecticut, June 2022
   <div class="canvas-container">
    <img class="canvas-frame" src="{img}" alt="beam spot image at radiator"/>
    <img class="canvas-overlay" src="{tmpdir}/{args['radname'] + radiator_views[args['radview']]}"
-        id="radiator_image" style="width: {args['img_css_width']}px; height: {args['img_css_height']}px;"
+        id="radiator_image" style="width: {args['img_css_width']}px; height: {args['img_css_height']}px; transform: translate({args['xoffset_px']}px,{args['yoffset_px']}px) rotate({args['phideg']}deg);"
         alt="radiator topographic image"/>
   </div>
   <div style="text-align: center; vertical-align: bottom;">
