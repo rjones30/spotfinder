@@ -143,7 +143,7 @@ def make_beamtilt(args):
                             args['xoffset'], args['yoffset'], args['phideg'],
                             args['xsigma'], args['ysigma'], args['xycorr'],
                             args['tiltresol'], args['tiltrange'], args['tiltrange'])
-      f = ROOT.TFile(hpath, "create")
+      f = ROOT.TFile(hpath, "recreate")
       hlist.Write()
       f.Close()
    return hlist
@@ -175,7 +175,7 @@ def make_cobrems_intensity(args, nsamples=100):
 
       hlist.Add(hamor[0])
       hlist.Add(htilt[0])
-      f = ROOT.TFile(hpath, "create")
+      f = ROOT.TFile(hpath, "recreate")
       hlist.Write()
       f.Close()
    return hlist
@@ -208,7 +208,7 @@ def make_cobrems_polarintensity(args, nsamples=100):
 
       hlist.Add(hamor[0])
       hlist.Add(htilt[0])
-      f = ROOT.TFile(hpath, "create")
+      f = ROOT.TFile(hpath, "recreate")
       hlist.Write()
       f.Close()
    return hlist
