@@ -28,9 +28,9 @@ import time
 import struct
 
 # The following variables MUST be customized for the local site
-docroot = "/var/www/html"
-topdir = "/tools/spotfinder"
-tmpdir = "/tools/spotfinder/tmp"
+docroot = "/home/www/docs"
+topdir = "/halld/diamonds/spotfinder"
+tmpdir = "/halld/diamonds/spotfinder/tmp"
 
 # dummy initialization, self_script is now discovered during processing of queries
 self_script = "https://my-apache-server/spotfinder"
@@ -132,26 +132,26 @@ def make_beamtilt(args):
    hfile = "tiltspot_" + unique_radiator_string(args) + ".root"
    hpath = f"{docroot}{tmpdir}/{hfile}"
    try:
-      hlist = ROOT.TObjArray()
+      hlist = []
       f = ROOT.TFile(hpath)
       for h in ("tiltspot", "beamspot4topo", "topo4beamspot", "topo4beamspot2"):
          h2 = f.Get(h)
          h2.SetDirectory(0)
-         hlist.Add(h2)
+         hlist.append(h2)
    except:
       hlist = ROOT.tiltspot(args['radname'], args['iradview'],
                             args['xoffset'], args['yoffset'], args['phideg'],
                             args['xsigma'], args['ysigma'], args['xycorr'],
                             args['tiltresol'], args['tiltrange'], args['tiltrange'])
       f = ROOT.TFile(hpath, "recreate")
-      hlist.Write()
+      for hobj in hlist: f.WriteObject(hobj, hobj.GetName())
       f.Close()
    return hlist
 
 def make_cobrems_intensity(args, nsamples=100):
    """
    Creates a 1D histograms of the collimated photon beam energy spectrum
-   under the conditions specified in args, and return a TObjArray that
+   under the conditions specified in args, and return a Python list that
    contains the following TProfile intensity spectra.
       [0] coherent intensity, either polarization
       [1] incoherent intensity
@@ -160,12 +160,12 @@ def make_cobrems_intensity(args, nsamples=100):
             "_" + unique_collimator_string(args) + ".root")
    hpath = f"{docroot}{tmpdir}/{hfile}"
    try:
-      hlist = ROOT.TObjArray()
+      hlist = []
       f = ROOT.TFile(hpath)
       for h in ("cobrems_intensity", "amorph_intensity"):
          h2 = f.Get(h)
          h2.SetDirectory(0)
-         hlist.Add(h2)
+         hlist.append(h2)
    except:
       htilt = make_beamtilt(args)
       hlist = fill_cobrems_intensity(args, nsamples, htilt[0])
@@ -173,17 +173,17 @@ def make_cobrems_intensity(args, nsamples=100):
                                     args['peresol'], args['penergy0'], 
                                     args['penergy1'])
 
-      hlist.Add(hamor[0])
-      hlist.Add(htilt[0])
+      hlist.append(hamor[0])
+      hlist.append(htilt[0])
       f = ROOT.TFile(hpath, "recreate")
-      hlist.Write()
+      for hobj in hlist: f.WriteObject(hobj, hobj.GetName())
       f.Close()
    return hlist
 
 def make_cobrems_polarintensity(args, nsamples=100):
    """
    Creates a 1D histograms of the collimated photon beam energy spectrum
-   under the conditions specified in args, and return a TObjArray that
+   under the conditions specified in args, and return a Python list that
    contains the following TProfile intensity spectra.
       [0] polarized coherent intensity (ortho - para)
       [1] coherent intensity, either polarization
@@ -193,12 +193,12 @@ def make_cobrems_polarintensity(args, nsamples=100):
             "_" + unique_collimator_string(args) + ".root")
    hpath = f"{docroot}{tmpdir}/{hfile}"
    try:
-      hlist = ROOT.TObjArray()
+      hlist = []
       f = ROOT.TFile(hpath)
       for h in ("polar_intensity", "cobrems_intensity", "amorph_intensity"):
          h2 = f.Get(h)
          h2.SetDirectory(0)
-         hlist.Add(h2)
+         hlist.append(h2)
    except:
       htilt = make_beamtilt(args)
       hlist = fill_cobrems_polarintensity(args, nsamples, htilt[0])
@@ -206,10 +206,10 @@ def make_cobrems_polarintensity(args, nsamples=100):
                                     args['peresol'], args['penergy0'], 
                                     args['penergy1'])
 
-      hlist.Add(hamor[0])
-      hlist.Add(htilt[0])
+      hlist.append(hamor[0])
+      hlist.append(htilt[0])
       f = ROOT.TFile(hpath, "recreate")
-      hlist.Write()
+      for hobj in hlist: f.WriteObject(hobj, hobj.GetName())
       f.Close()
    return hlist
 
@@ -276,8 +276,8 @@ def fill_cobrems_intensity(args, nsamples, htilt, nsplit=1, batchsize=500):
    args['thetav'] = thetav_ref
    args['penergy0'] = penergy0_ref
    args['penergy1'] = penergy1_ref
-   hlist = ROOT.TObjArray()
-   hlist.Add(htot)
+   hlist = []
+   hlist.append(htot)
    return hlist
 
 def fill_cobrems_polarintensity(args, nsamples, htilt, nsplit=1, batchsize=500):
@@ -343,9 +343,9 @@ def fill_cobrems_polarintensity(args, nsamples, htilt, nsplit=1, batchsize=500):
    args['thetav'] = thetav_ref
    args['penergy0'] = penergy0_ref
    args['penergy1'] = penergy1_ref
-   hlist = ROOT.TObjArray()
-   hlist.Add(htot[1])
-   hlist.Add(htot[0])
+   hlist = []
+   hlist.append(htot[1])
+   hlist.append(htot[0])
    return hlist
 
 def get_form_var(var, pars, dtype, default, unit="", err=0):
