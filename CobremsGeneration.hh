@@ -26,6 +26,9 @@
 #include <vector>
 
 #if BOOST_PYTHON_WRAPPING
+#ifndef BOOST_BIND_GLOBAL_PLACEHOLDERS
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
+#endif
 #include <boost/python.hpp>
 #endif
 
