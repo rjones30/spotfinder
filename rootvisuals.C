@@ -8,6 +8,7 @@
 //
 
 #include <iostream>
+#include <cstdlib>
 #include <TROOT.h>
 #include <TH2D.h>
 #include <TProfile.h>
@@ -21,7 +22,9 @@
 #include "Couples.h"
 #include "CobremsGeneration.hh"
 
-TString resultsdir("/var/www/html/tools/spotfinder/tmp");
+TString resultsdir = std::getenv("COBREMS_WORKER")
+                   ? TString(std::getenv("COBREMS_WORKER")) + "/tmp"
+                   : TString("/var/www/html/tools/spotfinder/tmp");
 
 // These defaults can be changed from the spotfinder web tool
 CobremsGeneration cobrems(12.0, 9.0);
@@ -330,15 +333,17 @@ TObjArray *cobrems_intensity(const char* radiator_name, int radiator_view,
    int i0 = hintens->GetXaxis()->FindBin(emin - 0.2);
    int i1 = hintens->GetXaxis()->FindBin(emax + 0.2);
    int ndiv = i1 - i0 + 1;
-   double x[ndiv];
-   double y[ndiv];
+   //double x[ndiv];
+   //double y[ndiv];
+   std::vector<double> x(ndiv);
+   std::vector<double> y(ndiv);
    for (int i=0; i<ndiv; i++) {
       x[i] = hintens->GetXaxis()->GetBinCenter(i0 + i) / ebeam;
       y[i] = cobrems.Rate_dNcdx(x[i]);
    }
 
    // apply beam-crystal smearing
-   cobrems.applyBeamCrystalConvolution(ndiv, x, y);
+   cobrems.applyBeamCrystalConvolution(ndiv, x.data(), y.data());
 
    // convert to a histogram of beam intensity
    double norm = ibeam / 1.6e-13 / ebeam;
